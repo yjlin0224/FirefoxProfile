@@ -1,283 +1,261 @@
-/* Fix title bar and window control buttons (only tested with 200% scaling in Windows 11) */
+/*
+mkdir UserChromes && cd UserChromes
+curl -RO https://raw.githubusercontent.com/datguypiko/Firefox-Mod-Blur/refs/heads/master/EXTRA%20MODS/Compact%20extensions%20menu/Style%202/cleaner_extensions_menu.css
+curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_content_context_menu.css
+curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_main_menu.css
+curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_places_context_menu.css
+curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_tabs_context_menu.css
+curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_textbox_context_menu.css
+curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/privatemode_indicator_as_menu_button.css
+*/
 
-#nav-bar {
-  border-top: 0 !important;
-}
+@import url(UserChromes/cleaner_extensions_menu.css);
+@import url(UserChromes/iconized_content_context_menu.css);
+@import url(UserChromes/iconized_main_menu.css);
+@import url(UserChromes/iconized_places_context_menu.css);
+@import url(UserChromes/iconized_tabs_context_menu.css);
+@import url(UserChromes/iconized_textbox_context_menu.css);
+@import url(UserChromes/privatemode_indicator_as_menu_button.css);
 
-:root[sizemode="normal"] #navigator-toolbox {
-  margin-top: 0.5px !important;
-}
-
-#navigator-toolbox {
-  border-bottom: 0 !important;
-  margin-bottom: 0.5px !important;
-}
-
-#navigator-toolbox .titlebar-buttonbox-container {
-  height: 28px !important;
-}
-
-#navigator-toolbox .titlebar-min .toolbarbutton-icon,
-#navigator-toolbox .titlebar-restore .toolbarbutton-icon,
-#navigator-toolbox .titlebar-max .toolbarbutton-icon {
-  opacity: 0 !important;
-}
-
-/* Adjust title bar style (only tested with standard density in Firefox) */
-
-:root {
-  --toolbar-start-end-padding: 4px !important;
-  --urlbar-margin-inline: 2px !important;
-}
-
-#navigator-toolbox .titlebar-spacer {
-  display: none !important;
-}
-
-#nav-bar:not([customizing]) > #PanelUI-button {
-  order: 0 !important;
-}
-
-#nav-bar:not([customizing]) > #nav-bar-customization-target {
-  order: 1 !important;
-}
-
-#nav-bar:not([customizing]) > #nav-bar-overflow-button {
-  order: 2 !important;
-}
-
-#nav-bar:not([customizing]) > .private-browsing-indicator-with-label {
-  margin-inline: 0 !important;
-  padding-block: var(--toolbarbutton-inner-padding) !important;
-  padding-inline-start: calc(
-    var(--toolbar-start-end-padding) + var(--toolbarbutton-inner-padding)
-  ) !important;
-  padding-inline-end: calc(
-    var(--toolbarbutton-outer-padding) + var(--toolbarbutton-inner-padding)
-  ) !important;
-}
-
-#nav-bar:not([customizing]) > #PanelUI-button > #PanelUI-menu-button {
-  padding-inline-start: var(--toolbar-start-end-padding) !important;
-  padding-inline-end: 0 !important;
-}
-
-#nav-bar:not([customizing], [overflowing], [nonemptyoverflow])
-  > #nav-bar-customization-target
-  > :is(toolbarbutton, toolbaritem):last-child {
-  padding-inline-end: var(--toolbar-start-end-padding) !important;
-}
-
-#nav-bar:not([customizing]) > #nav-bar-overflow-button {
-  padding-inline-end: var(--toolbar-start-end-padding) !important;
-}
-
-#urlbar:not([focused], [open]) > #urlbar-background,
-#searchbar:not(:focus-within) {
-  background-color: var(--toolbarbutton-hover-background) !important;
-}
-
-#appMenu-popup {
-  --panel-width: 272px !important;
-  margin-inline: calc(var(--panel-width) * -1 + 32px - var(--panel-shadow-margin)) !important;
-}
-
-/* Make window transparent to apply Windows 11 Mica effect */
-
-:root {
-  --toolbar-bgcolor: transparent !important;
-  --tab-selected-bgcolor: var(--button-background-color-active) !important;
-
-  /* Reference: `LayerOnMicaBaseAltFillColorDefault` of
-      https://github.com/dotnet/wpf/blob/main/src/Microsoft.DotNet.Wpf/src/Themes/PresentationFramework.Fluent/Themes/Fluent.Light.xaml
-      https://github.com/dotnet/wpf/blob/main/src/Microsoft.DotNet.Wpf/src/Themes/PresentationFramework.Fluent/Themes/Fluent.Dark.xaml
-  */
-  --sidebar-background-color: light-dark(#ffffffb3, #3a3a3a73) !important;
-  --tabpanel-background-color: light-dark(#ffffffb3, #3a3a3a73) !important;
-}
-
-#tabbrowser-tabpanels .browserStack:has(> browser[transparent="true"]) {
-  background: var(--color-white) !important;
-}
-
-/* When side panel and vertical tabs is enabled */
-@media (-moz-bool-pref: "sidebar.revamp") {
-  /* Adjust spacing of elements in side panel (only tested with standard density in Firefox) */
-
-  :root {
-    --tab-inner-inline-margin: calc(var(--tab-block-margin) * 2) !important;
-    --tab-pinned-margin-inline-expanded: 0px !important;
-    --tab-pinned-container-margin-inline-expanded: var(--tab-block-margin) !important;
-  }
-
-  spacer[part="overflow-start-indicator"],
-  spacer[part="overflow-end-indicator"] {
-    background-image: linear-gradient(
-      to top,
-      transparent 0%,
-      var(--toolbar-bgcolor),
-      transparent 100%
-    ) !important;
-    height: 8px !important;
-  }
-
-  spacer[part="overflow-start-indicator"] {
-    margin-block: 0 -8px !important;
-    transform: translateY(-4px) !important;
-  }
-
-  spacer[part="overflow-end-indicator"] {
-    margin-block: -8px 0 !important;
-    transform: translateY(4px) !important;
-  }
-
-  #sidebar-main {
-    margin-block-start: calc(var(--tab-block-margin) * -1 - 0.5px) !important;
-  }
-
-  #sidebar-box {
-    margin-block-start: -0.5px !important;
-    padding-block-end: var(--toolbar-start-end-padding) !important;
-    /* FIXME: not considered if side panel is set to the right */
-    padding-inline-end: var(--toolbar-start-end-padding) !important;
-  }
-
-  #sidebar-splitter {
-    --splitter-width: var(--toolbar-start-end-padding) !important;
-    /* FIXME: not considered if side panel is set to the right */
-    margin-inline-start: calc(var(--splitter-width) * -1) !important;
-  }
-
-  #tabbrowser-tabbox {
-    /* FIXME: not considered if side panel is set to the right */
-    margin-inline-start: 0.5px !important;
-  }
-
-  #tabbrowser-tabs {
-    grid-gap: var(--tab-block-margin) !important;
-  }
-
-  #tabbrowser-tabs > #vertical-tabs-newtab-button {
-    margin-block-end: var(--tab-block-margin) !important;
-  }
-
-  #tabbrowser-tabs[expanded] > #vertical-pinned-tabs-container .tab-background {
-    margin-inline: var(--tab-block-margin) !important;
-  }
-
-  .tools-and-extensions.actions-list[orientation="horizontal"] {
-    --first-last-button-width: calc(
-      var(--button-size-icon) + var(--tab-block-margin) + var(--tab-inner-inline-margin)
-    ) !important;
-    --middle-button-width: calc(var(--button-size-icon) + var(--tab-block-margin) * 2) !important;
-    --button-count: 7 !important; /* default is 6 but 7 is more comfortable */
-    /* grid-template-columns: var(--first-last-button-width) repeat(
-        calc(var(--button-count) - 2),
-        var(--middle-button-width)
-      ) var(--first-last-button-width) !important; */
-    min-width: calc(
-      var(--first-last-button-width) * 2 + var(--middle-button-width) * (var(--button-count) - 2)
-    ) !important;
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-  }
-
-  .tools-and-extensions.actions-list > moz-button.tools-overflow {
-    --button-outer-padding-inline-start: var(--tab-block-margin) !important;
-    --button-outer-padding-inline-end: var(--tab-block-margin) !important;
-    --button-outer-padding-block: var(--tab-inner-inline-margin) !important;
-  }
-
-  .tools-and-extensions.actions-list > moz-button.tools-overflow:first-of-type {
-    --button-outer-padding-inline-start: var(--tab-inner-inline-margin) !important;
-    --button-outer-padding-block-end: var(--tab-inner-inline-margin) !important;
-  }
-
-  .tools-and-extensions.actions-list > moz-button.tools-overflow:last-of-type {
-    --button-outer-padding-inline-end: var(--tab-inner-inline-margin) !important;
-    --button-outer-padding-block-end: var(--tab-inner-inline-margin) !important;
-  }
-
-  .tools-and-extensions.actions-list > moz-button:not(.tools-overflow) {
-    --button-outer-padding-inline: var(--tab-inner-inline-margin) !important;
-    --button-outer-padding-block: var(--tab-block-margin) !important;
-  }
-
-  .tools-and-extensions.actions-list > moz-button:not(.tools-overflow):first-of-type {
-    --button-outer-padding-block-start: var(--tab-inner-inline-margin) !important;
-  }
-
-  .tools-and-extensions.actions-list > moz-button:not(.tools-overflow):last-of-type {
-    --button-outer-padding-block-end: var(--tab-inner-inline-margin) !important;
-  }
-
-  /* Round the top-left corner of the browser */
-
-  #browser:has(> [id^="sidebar"]:not([hidden="true"])) > #tabbrowser-tabbox {
-    overflow: hidden !important;
-  }
-
-  #browser:has(> [id^="sidebar"]:not([hidden="true"])) > #tabbrowser-tabbox[style="order: 2;"] {
-    border-top-right-radius: var(--border-radius-medium) !important;
-    overflow: hidden !important;
-  }
-
-  #browser:has(> [id^="sidebar"]:not([hidden="true"])) > #tabbrowser-tabbox[style="order: 4;"] {
-    border-top-left-radius: var(--border-radius-medium) !important;
-    overflow: hidden !important;
-  }
-}
-
-/* Cleaner extensions menu */
-/* Reference: https://github.com/datguypiko/Firefox-Mod-Blur/blob/8bc25e9/EXTRA%20MODS/Compact%20extensions%20menu/Style%202/cleaner_extensions_menu.css */
-
-#unified-extensions-panel #unified-extensions-view {
-  width: 100% !important;
-}
+/* Extend UserChromes/cleaner_extensions_menu.css */
 
 #unified-extensions-view {
-  --uei-icon-size: 24px;
-  --ext-panel-grid-columns: 3;
+  --uei-icon-size: 32px !important;
 }
 
-#unified-extensions-view .panel-header,
-#unified-extensions-view .panel-header + toolbarseparator,
-#unified-extensions-view .panel-subview-body + toolbarseparator,
-#unified-extensions-view #unified-extensions-manage-extensions,
-#unified-extensions-view .unified-extensions-item-menu-button.subviewbutton,
-#unified-extensions-view .unified-extensions-item-action-button .unified-extensions-item-contents {
-  display: none !important;
-}
-
-#unified-extensions-view .panel-subview-body {
-  padding: 4px !important;
-}
-
-#unified-extensions-view .unified-extensions-item .unified-extensions-item-icon,
-#unified-extensions-view .unified-extensions-item .toolbarbutton-badge-stack {
-  margin-inline-end: 0px !important;
-}
-
-#unified-extensions-view #overflowed-extensions-list,
-#unified-extensions-view #unified-extensions-area,
-#unified-extensions-view .unified-extensions-list {
-  display: grid !important;
-  grid-template-columns: repeat(var(--ext-panel-grid-columns), auto);
-  justify-items: left !important;
-  align-items: left !important;
-}
-
-#unified-extensions-view .unified-extensions-list .unified-extensions-item,
-#unified-extensions-view .unified-extensions-list {
-  max-width: max-content;
-}
-
-#unified-extensions-view #unified-extensions-area {
-  padding-bottom: 3px !important;
-  border-bottom: 1px solid #aeaeae33 !important;
+@media not -moz-pref('mod.hide.manage-extensions.button') {
+  #unified-extensions-manage-extensions {
+    margin-bottom: 8px !important;
+  }
 }
 
 #unified-extensions-view:is(panelview, #widget-overflow-fixed-list) .toolbaritem-combined-buttons {
-  margin: 1px !important;
+  margin: 4px !important;
+}
+
+#unified-extensions-view .unified-extensions-item .unified-extensions-item-action-button {
+  padding: 8px !important;
+}
+
+@media not -moz-pref('mod.disable.extensions-menu.separator') {
+  @media not -moz-pref('mod.hide.faded-extensions.inside.extensions-menu') {
+    #unified-extensions-view
+      #unified-extensions-area:has(+ .unified-extensions-list .unified-extensions-item) {
+      padding-bottom: 4px !important;
+      margin-left: 4px !important;
+      margin-right: 4px !important;
+      margin-bottom: 4px !important;
+    }
+  }
+}
+
+/* Extend UserChromes/iconized_main_menu.css */
+
+#appMenu-fxa-status2[fxastatus] > toolbarbutton::before {
+  background-size: cover !important;
+  border-radius: var(--border-radius-circle) !important;
+}
+
+/* Override Global Font Family */
+
+*:not(.titlebar-button) {
+  font-family:
+    'Noto Sans',
+    'Noto Sans CJK TC',
+    'Microsoft JhengHei',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif !important;
+}
+
+/* Move Menu Button to Left and Change Icon to Firefox */
+
+#nav-bar #PanelUI-button {
+  order: 0 !important;
+}
+
+toolbar:not([customizing]) > #nav-bar-customization-target {
+  order: 1 !important;
+}
+
+toolbar:not([customizing]) > #nav-bar-overflow-button {
+  order: 2 !important;
+}
+
+#appMenu-popup {
+  margin-inline: -244px !important;
+}
+
+#PanelUI-menu-button {
+  list-style-image: url('chrome://devtools/skin/images/browsers/firefox.svg') !important;
+}
+
+/* Adjust Spacing between Toolbar Items */
+
+:root {
+  --toolbar-start-end-padding: 4px !important;
+  --toolbarbutton-outer-padding-narrow: 2px !important;
+  --toolbarbutton-inner-padding-narrow: 8px !important;
+  --toolbarbutton-inner-padding-compact: 8px !important;
+  --urlbar-margin-inline: 2px !important;
+}
+
+#PanelUI-menu-button {
+  padding-inline-start: var(--toolbar-start-end-padding) !important;
+  padding-inline-end: var(--toolbarbutton-outer-padding) !important;
+}
+
+#nav-bar-customization-target {
+  & > :is(toolbarbutton, toolbaritem):first-child,
+  & > toolbarpaletteitem:first-child > :is(toolbarbutton, toolbaritem) {
+    padding-inline-start: var(--toolbarbutton-outer-padding) !important;
+  }
+}
+
+/* Adjust Spacing between Tabs */
+
+:root {
+  --tab-inner-inline-margin: 4px !important;
+  --tab-height-with-margin-padding: calc(
+    var(--tab-min-height) + (2 * var(--tab-block-margin))
+  ) !important;
+  --tab-pinned-container-margin-inline-expanded: 2px !important;
+  --tab-pinned-expanded-background-width: var(--tab-min-height) !important;
+  --tab-pinned-margin-inline-expanded: 2px !important;
+}
+
+#tabbrowser-tabs[orient='vertical'] {
+  grid-gap: 0px !important;
+
+  #pinned-tabs-container {
+    margin-block-start: -2px !important;
+  }
+
+  & .tabbrowser-tab {
+    padding-block: 2px !important;
+
+    & > .tab-stack > .tab-background {
+      margin-block: 0 !important;
+    }
+
+    &:not([hidden], [pinned]):first-of-type > .tab-stack {
+      margin-block-start: -2px !important;
+    }
+
+    &:not(tab-group .tabbrowser-tab):not([hidden], [pinned]):last-of-type > .tab-stack {
+      margin-block-end: -2px !important;
+    }
+  }
+}
+
+#tabbrowser-tabs[orient='vertical'][expanded] {
+  & tab-group > .tab-group-label-container {
+    margin-inline-start: var(--tab-inner-inline-margin) !important;
+    padding-inline-start: var(--tab-inner-inline-margin) !important;
+  }
+
+  & tab-group > .tabbrowser-tab,
+  &[movingtab][movingtab-addToGroup]:not([movingtab-group], [movingtab-ungroup])
+    tab-group
+    > .tabbrowser-tab:is(:active, [multiselected]) {
+    margin-inline-start: var(--tab-inner-inline-margin) !important;
+
+    & .tab-background {
+      margin-inline-start: calc(var(--tab-inner-inline-margin) + 2px) !important;
+    }
+  }
+}
+
+.tab-group-label-container {
+  #tabbrowser-tabs[orient='vertical'] & {
+    margin-block: calc(var(--tab-inner-inline-margin) + 2px) !important;
+
+    tab-group:not([collapsed]) > &,
+    tab-group[collapsed][hasactivetab] > & {
+      padding-block-end: 2px !important;
+    }
+  }
+}
+
+.tab-group-overflow-count-container {
+  #tabbrowser-tabs[orient='vertical'] & {
+    min-height: calc(var(--tab-min-height) + var(--tab-inner-inline-margin)) !important;
+
+    #tabbrowser-tabs[expanded] & {
+      margin-inline-start: var(--tab-inner-inline-margin) !important;
+    }
+  }
+}
+
+#vertical-pinned-tabs-splitter {
+  border-top-color: transparent !important;
+  z-index: 1 !important;
+}
+
+#tabbrowser-arrowscrollbox[orient='vertical']
+  > #tabbrowser-arrowscrollbox-periphery
+  > #tabs-newtab-button,
+#vertical-tabs-newtab-button {
+  margin-block: var(--tab-inner-inline-margin) !important;
+}
+
+#sidebar-tools-and-extensions-splitter {
+  margin-block-end: 0px !important;
+
+  &:has(+ .buttons-wrapper > .tools-and-extensions[orientation='horizontal']) {
+    margin-block-end: -2px !important;
+    border-top-color: transparent !important;
+    z-index: 1 !important;
+  }
+
+  & + .buttons-wrapper {
+    min-width: calc(var(--button-min-height) * 7 + (var(--tab-inner-inline-margin) * 8)) !important;
+    min-height: calc(
+      var(--button-min-height) * 1 + (var(--tab-inner-inline-margin) * 2)
+    ) !important;
+
+    &:not(:has(> .tools-and-extensions[orientation='horizontal'])) {
+      min-width: calc(
+        var(--button-min-height) * 1 + (var(--tab-inner-inline-margin) * 2)
+      ) !important;
+      min-height: calc(
+        var(--button-min-height) * 7 + (var(--tab-inner-inline-margin) * 8)
+      ) !important;
+    }
+
+    & > .tools-and-extensions {
+      gap: var(--tab-inner-inline-margin) !important;
+      padding: var(--tab-inner-inline-margin) !important;
+
+      &[orientation='horizontal']:has(+ .tools-and-extensions) {
+        padding-inline-end: 0 !important;
+      }
+
+      &[orientation='vertical']:has(+ .tools-and-extensions) {
+        padding-block-end: 0 !important;
+      }
+
+      &[orientation='vertical'] moz-button {
+        --button-outer-padding-inline: 0 !important;
+        --button-outer-padding-block: 0 !important;
+        --button-outer-padding-block-start: 0 !important;
+        --button-outer-padding-block-end: 0 !important;
+      }
+    }
+  }
+}
+
+/* Remove Border of Browser Container */
+
+.browserContainer {
+  outline: none !important;
+  box-shadow: none !important;
+
+  @media -moz-pref('sidebar.revamp') {
+    & {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+  }
 }
