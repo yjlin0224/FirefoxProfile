@@ -1,13 +1,13 @@
 @-moz-document url-prefix("about:") {
   :root {
     --default-font-family:
-      'Noto Sans', 'Noto Sans CJK TC', 'Microsoft JhengHei', system-ui, -apple-system,
-      BlinkMacSystemFont, sans-serif;
+      'Noto Sans', 'Noto Sans CJK TC', 'Plangothic P1', 'Plangothic P2', 'TH-Hak',
+      'Microsoft JhengHei', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     --monospace-font-family:
-      'Maple Mono NF CN', 'Fira Code', 'Noto Sans Mono', 'Noto Sans Mono CJK TC',
-      'Microsoft JhengHei', monospace;
+      'Maple Mono NF', 'Maple Mono NF CN', 'Fira Code', 'Noto Sans Mono', 'Noto Sans Mono CJK TC',
+      'Plangothic P1', 'Plangothic P2', 'TH-Hak', 'Microsoft YaHei Mono', monospace;
     --monospace-font-feature-settings:
-      'calt', 'cv02', 'cv03', 'cv31', 'cv96', 'cv97', 'cv98', 'cv99', 'ss05';
+      'calt', 'cv02', 'cv03', 'cv31', 'cv96', 'cv97', 'cv98', 'cv99', 'ss05', 'ss07', 'ss08', 'ss11';
   }
 
   :root,
@@ -245,13 +245,13 @@
   :root[platform='win'],
   :root[platform='linux'] {
     --monospace-font-family:
-      'Maple Mono NF CN', 'Fira Code', 'Noto Sans Mono', 'Noto Sans Mono CJK TC',
-      'Microsoft JhengHei', monospace !important;
+      'Maple Mono NF', 'Maple Mono NF CN', 'Fira Code', 'Noto Sans Mono', 'Noto Sans Mono CJK TC',
+      'Plangothic P1', 'Plangothic P2', 'TH-Hak', 'Microsoft YaHei Mono', monospace !important;
   }
 
   :root {
     --monospace-font-feature-settings:
-      'calt', 'cv02', 'cv03', 'cv31', 'cv96', 'cv97', 'cv98', 'cv99', 'ss05';
+      'calt', 'cv02', 'cv03', 'cv31', 'cv96', 'cv97', 'cv98', 'cv99', 'ss05', 'ss07', 'ss08', 'ss11';
     --theme-code-font-size: 12px;
   }
 
