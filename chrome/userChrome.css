@@ -62,6 +62,9 @@ curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/head
   font-family:
     'Noto Sans',
     'Noto Sans CJK TC',
+    'Plangothic P1',
+    'Plangothic P2',
+    'TH-Hak',
     'Microsoft JhengHei',
     system-ui,
     -apple-system,
