@@ -121,7 +121,7 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
 :root {
   --tab-inner-inline-margin: 4px !important;
   --tab-height-with-margin-padding: calc(
-    var(--tab-min-height) + (2 * var(--tab-block-margin))
+    var(--tab-min-height) + (2 * var(--tab-margin-block))
   ) !important;
   --tab-pinned-container-margin-inline-expanded: 2px !important;
   --tab-pinned-expanded-background-width: var(--tab-min-height) !important;
