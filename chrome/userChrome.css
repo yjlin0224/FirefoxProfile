@@ -116,6 +116,11 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
   }
 }
 
+#confirmation-hint {
+  margin-inline-start: 252px !important;
+  margin-block-start: 4px !important;
+}
+
 /* Adjust Spacing between Tabs */
 
 :root {
