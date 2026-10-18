@@ -18,6 +18,17 @@ Firefox Developer Edition 的介面自訂：`userChrome.css`（瀏覽器介面�
 | `scripts/` | 部署、即時重新載入、量測工具，說明見 [`scripts/README.md`](scripts/README.md) |
 | `Taskfile.yaml` | 所有操作的入口 |
 
+## 適用版本
+
+目前以 Firefox Developer Edition 159（Windows 11）為基準。調校時的完整環境（縮放比例、佈景主題、側邊欄設定等）寫在 `userChrome.css`、`userContent.css` 開頭的「TUNED FOR」；`reference/about-preferences.defaults.js` 開頭記錄產生時的確切版本與建置編號。
+
+Firefox 更新到新的主要版本後：
+
+1. 開啟 Browser Toolbox，用 `scripts/` 的量測工具對照兩個 CSS 開頭的設計規格，修正跑掉的地方，做法見各檔開頭的「Firefox 更新後壞掉時怎麼修」。
+2. `task userjs:check`：找出型別不符、已經失效或已經等於預設值的設定。
+3. `task prefs:dump`，再用 `git diff reference/` 看設定頁面新增、移除或改變了哪些項目。
+4. 把這一節、`user.js` 開頭與兩個 CSS 開頭「TUNED FOR」的版本改成新版本。
+
 ## 第一次設定
 
 1. 安裝 [Task](https://taskfile.dev)（`winget install Task.Task`）和 Node.js。量測用的點擊測試另外需要 Python 3。
