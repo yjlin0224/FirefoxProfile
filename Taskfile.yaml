@@ -102,6 +102,13 @@ tasks:
       - task: fmt:check
       - task: userjs:check
 
+  prefs:dump:
+    desc:
+      Write reference/about-preferences.{defaults,current}.js - about:preferences page by page, each
+      setting's prefs with their default and current values (needs the Browser Toolbox)
+    cmds:
+      - node scripts/about-preferences.mjs {{if .PORT}}--port {{.PORT}}{{end}} {{.CLI_ARGS}}
+
   mods:update:
     desc:
       Download the third-party mods (scripts/mods.json) into profile/chrome/UserChromes/; review
