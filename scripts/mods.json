@@ -1,11 +1,29 @@
 {
-  "comment": "Third-party userChrome mods, vendored in profile/chrome/UserChromes/ and @imported by userChrome.css. `task mods:update` downloads them again; review with git diff before deploying.",
+  "comment": "Third-party userChrome mods, vendored in profile/chrome/UserChromes/ and @imported by userChrome.css. url: the file on its upstream branch; commit: the upstream commit the vendored copy comes from. `task mods:check` lists upstream changes since; `task mods:update` downloads them and updates commit. Review with git diff before deploying.",
   "mods": {
-    "cleaner_extensions_menu.css": "https://raw.githubusercontent.com/datguypiko/Firefox-Mod-Blur/refs/heads/master/EXTRA%20MODS/Compact%20extensions%20menu/Style%202/cleaner_extensions_menu.css",
-    "iconized_content_context_menu.css": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_content_context_menu.css",
-    "iconized_main_menu.css": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_main_menu.css",
-    "iconized_places_context_menu.css": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_places_context_menu.css",
-    "iconized_tabs_context_menu.css": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_tabs_context_menu.css",
-    "iconized_textbox_context_menu.css": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_textbox_context_menu.css"
+    "cleaner_extensions_menu.css": {
+      "url": "https://raw.githubusercontent.com/datguypiko/Firefox-Mod-Blur/refs/heads/master/EXTRA%20MODS/Compact%20extensions%20menu/Style%202/cleaner_extensions_menu.css",
+      "commit": "2d69bd804c14fff0a8701f6a2902f47dbaf7ebe6"
+    },
+    "iconized_content_context_menu.css": {
+      "url": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_content_context_menu.css",
+      "commit": "50f0427d106e228432fb642ca3bf5da2ed3566dd"
+    },
+    "iconized_main_menu.css": {
+      "url": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_main_menu.css",
+      "commit": "0ec973ebc4cb7100c4fa84e182d20e35d5d389b6"
+    },
+    "iconized_places_context_menu.css": {
+      "url": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_places_context_menu.css",
+      "commit": "65d4b5d6ec3ca3570c81460905465cbc78e736f6"
+    },
+    "iconized_tabs_context_menu.css": {
+      "url": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_tabs_context_menu.css",
+      "commit": "50f0427d106e228432fb642ca3bf5da2ed3566dd"
+    },
+    "iconized_textbox_context_menu.css": {
+      "url": "https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_textbox_context_menu.css",
+      "commit": "016521f0a21bbb76e8eff4b8410c1e049f081c77"
+    }
   }
 }

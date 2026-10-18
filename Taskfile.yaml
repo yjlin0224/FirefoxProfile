@@ -111,7 +111,7 @@ tasks:
 
   mods:update:
     desc:
-      Download the third-party mods (scripts/mods.json) into profile/chrome/UserChromes/; review
-      with git diff, then deploy
+      Download the third-party mods (scripts/mods.json) at their latest upstream commit into
+      profile/chrome/UserChromes/ and record it; mods edited here are skipped unless -- --force
     cmds:
-      - node scripts/mods-update.mjs
+      - node scripts/mods-update.mjs {{.CLI_ARGS}}
