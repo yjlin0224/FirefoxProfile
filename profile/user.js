@@ -4,25 +4,32 @@ user_pref("browser.aboutConfig.showWarning", false);
 user_pref("browser.contentblocking.category", "custom");
 user_pref("browser.download.always_ask_before_handling_new_types", true);
 user_pref("browser.download.autohideButton", false);
+user_pref("browser.newtabpage.activity-stream.nova.enabled", true); // default, pinned: userContent.css is written for the nova new tab
 user_pref("browser.newtabpage.activity-stream.improvesearch.handoffToAwesomebar", false);
 user_pref("browser.newtabpage.activity-stream.section.highlights.rows", 4);
 user_pref("browser.newtabpage.activity-stream.showSponsoredTopSites", false);
 user_pref("browser.newtabpage.activity-stream.topSitesRows", 4);
+user_pref("browser.nova.enabled", true); // default, pinned: userChrome.css is written for the nova browser UI
 user_pref("browser.opaqueResponseBlocking", false);
+user_pref("browser.profiles.enabled", false); // no profile group / profile switcher (the app menu entry); this profile was taken out of its group (StoreID removed from profiles.ini)
 user_pref("browser.promo.pin.enabled", false);
 user_pref("browser.search.suggest.enabled.private", true);
 user_pref("browser.startup.homepage_override.mstone", "ignore");
 user_pref("browser.startup.page", 3);
 user_pref("browser.theme.windows.accent-color-in-tabs.enabled", true);
+user_pref("browser.toolbars.bookmarks.visibility", "never"); // userChrome.css: no bookmarks toolbar
+user_pref("browser.uidensity", 0); // default, pinned: userChrome.css's 32px grid is for normal density
 user_pref("browser.urlbar.showSearchSuggestionsFirst", false);
 user_pref("browser.urlbar.trimURLs", false);
 user_pref("browser.vpn_promo.enabled", false);
-user_pref("datareporting.healthreport.uploadEnabled", false);
+user_pref("datareporting.healthreport.uploadEnabled", false); // shared by the profile group (permanentSharedPrefs): the group's database overrides this at startup; set it in Settings
 user_pref("datareporting.policy.dataSubmissionEnabled", false);
 user_pref("datareporting.policy.firstRunURL", "");
 user_pref("devtools.command-button-measure.enabled", true);
 user_pref("devtools.command-button-rulers.enabled", true);
 user_pref("devtools.command-button-screenshot.enabled", true);
+user_pref("devtools.chrome.enabled", true); // Browser Toolbox, used by scripts/
+user_pref("devtools.debugger.remote-enabled", true); // Browser Toolbox, used by scripts/
 user_pref("devtools.dom.enabled", true);
 user_pref("devtools.screenshot.audio.enabled", false);
 user_pref("devtools.toolbox.host", "right");
@@ -79,5 +86,7 @@ user_pref("widget.windows.mica.popups", 1);
 user_pref("widget.windows.mica.toplevel-backdrop", 1);
 user_pref("browser.theme.native-theme", true);
 user_pref("gfx.webrender.compositor.force-enabled", true);
-user_pref("sidebar.revamp", true);
+user_pref("sidebar.revamp", true); // default, pinned: userChrome.css needs the new sidebar
 user_pref("sidebar.verticalTabs", true);
+user_pref("sidebar.position_start", true); // default, pinned: userChrome.css expects the sidebar on the left
+user_pref("sidebar.visibility", "always-show"); // default, pinned: userChrome.css is tuned for always-show (or expand-on-hover)
