@@ -1,4 +1,62 @@
-@-moz-document url-prefix("about:") {
+/*
+ * TUNED FOR
+ *   Firefox 159 Developer Edition (Oct 2026), Windows 11 (200% scaling), zh-TW.
+ *   New tab: nova (browser.newtabpage.activity-stream.nova.enabled = true) with an uploaded
+ *   wallpaper (newtabWallpapers.wallpaper = custom, its theme light), widgets on.
+ *
+ * DESIGN SPEC: what "correct" looks like on the new tab (scripts/ measures it, see below)
+ *   - Grid: 1rem = 16px (nova: 15px); layout column 72px (nova: 75px); spacing on 4px steps.
+ *   - Glass: every surface is the cards' background, --newtab-background-card (#252428, or white
+ *     in a light scheme, at 80%), over a 16px blur (--custom-backdrop-blur): the customize panel
+ *     and its subpanels, the search box, top site tiles, popup menus, widget cards, the
+ *     customize button and the widgets section's buttons. Hover never changes it; pressed
+ *     buttons get darker (OKLCH lightness × 0.644, as much as nova's pressed accent color).
+ *   - Top sites: 64px tiles in 72px columns, columns 4px apart (tiles 12px apart); 8 a row,
+ *     6 below a 652px page, 4 below 500px; all 32 shown. On hover the tile grows to 72px and
+ *     the icon from 40px to 48px, both around their center. Pin and menu button centered 12px
+ *     from the tile's top corners; the menu opens with a corner on the button's corner.
+ *     Titles: one line, 16px line height, 8px under the tile, white outline + dark glow.
+ *   - Search box: as wide as the row of tiles (first tile's left edge to last one's right),
+ *     36px above the tiles.
+ *   - Page: no logo, no right sidebar. Search box + top sites sit at the bottom of the window:
+ *     24px page padding at the sides and bottom (the titles end 40px above the bottom). The page
+ *     only scrolls once the search box has risen to 48px from the top (window < ~588px).
+ *   - Fonts: UI Noto Sans, code Maple Mono (also in about:config and DevTools).
+ *
+ * WHEN A FIREFOX UPDATE BREAKS SOMETHING
+ *   1. Measure with scripts/ (see scripts/README.md) and compare against the spec above. The
+ *      new tab runs in a content process: evaluate there with `task eval -- --pid <pid> …`
+ *      (chrome privileges) or `--tab about:newtab` (page privileges). With `task watch`
+ *      running, saving this file deploys it and reloads it in every process, no restart needed.
+ *   2. Most rules override nova's *variables* or rules: search the Firefox file named in the
+ *      rule's "Firefox:" note. From the Browser Toolbox console, e.g.
+ *      fetch("chrome://newtab/content/css/activity-stream.css").then((r) => r.text()).
+ *      Others: resource://newtab/data/content/activity-stream.bundle.js (the new tab's script),
+ *      chrome://global/content/elements/moz-button.css, panel-list.css / panel-list.mjs,
+ *      chrome://browser/content/contentSearchHandoffUI.css (the search box).
+ *   3. "FRAGILE:" marks rules that depend on measured or hard-coded nova values.
+ *   Constraints that shaped this file:
+ *     - Selectors here reach into shadow DOM, but ::part() and :host() don't work from a user
+ *       sheet and selectors can't cross the shadow boundary. Custom properties set on a host
+ *       inherit in; so does color-scheme.
+ *     - light-dark() resolves where a color is used, and nova switches some elements to the
+ *       light scheme over a light wallpaper (moz-buttons' insides, the widgets section). Hence
+ *       --custom-card-color: a registered <color>, resolved where it's declared.
+ *     - A backdrop-filter inside a frosted element only sees that element, not the wallpaper
+ *       (it's the backdrop root). Don't nest them.
+ *     - Variables built from other variables at :root (e.g. moz-button's --button-border) keep
+ *       the root's values; override the composite one.
+ *     - @property can't go inside @-moz-document.
+ *     - Never build a document by hand to reach a process's copy of this sheet: a windowless
+ *       about:blank crashed the whole browser (MOZ_RELEASE_ASSERT on its principals).
+ */
+
+
+/* ==== Fonts for Firefox's own pages ==== */
+
+/* about: pages (new tab, about:config, the DevTools toolbox frame…), the DevTools panels
+   (chrome://devtools) and view-source: pages share these font variables */
+@-moz-document url-prefix("about:"), url-prefix("chrome://devtools"), url-prefix("view-source:") {
   :root {
     --default-font-family:
       'Noto Sans', 'Noto Sans CJK TC', 'Plangothic P1', 'Plangothic P2', 'TH-Hak',
@@ -10,225 +68,573 @@
       'calt', 'cv02', 'cv03', 'cv31', 'cv96', 'cv97', 'cv98', 'cv99', 'ss05', 'ss07', 'ss08', 'ss11';
   }
 
-  :root,
-  body {
+  /* The UI font. !important beats DevTools' `:root { font: message-box }` */
+  :root {
     font-family: var(--default-font-family) !important;
   }
 }
 
-@-moz-document url("about:newtab") {
-  :root {
-    --space-xxsmall: 2px !important;
-    --space-xsmall: 4px !important;
-    --space-small: 8px !important;
-    --space-medium: 12px !important;
-    --space-large: 16px !important;
-    --space-xlarge: 24px !important;
-    --space-xxlarge: 32px !important;
-  }
-
+/* about: pages also force it on body. Not the DevTools panels: some of them (markup view,
+   source editors) set the monospace font on <body> for their code to inherit */
+@-moz-document url-prefix("about:") {
   body {
     font-family: var(--default-font-family) !important;
-    background-image: none !important;
   }
 
-  body::before,
-  body::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image:
-      var(--newtab-wallpaper, ''),
-      linear-gradient(
-        to right,
-        var(--newtab-wallpaper-color, ''),
-        var(--newtab-wallpaper-color, '')
-      );
-    background-position: var(--newtab-wallpaper-backgroundPosition);
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+  /* Below, parts that use a system font (font: menu / message-box / -moz-button…): each keeps
+     its size and takes the UI font. */
+
+  /* Form controls default to the system font instead of inheriting the UI font (e.g. the new
+     tab's and the private browsing page's search box, the theme choices in Settings). The
+     browser's own style, so a normal declaration wins.
+     Firefox: forms.css, `button { font: -moz-button }` */
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
   }
 
-  body::before {
-    z-index: -2;
-    background-size: cover;
-    filter: blur(var(--space-xxlarge)) brightness(0.8);
-    transform: scale(1.2);
-  }
-
-  body::after {
-    z-index: -1;
-    background-size: contain;
-  }
-
-  main {
-    justify-content: end !important;
-  }
-
-  #newtab-search-text {
-    background-color: color-mix(
-      in srgb,
-      var(--content-search-handoff-ui-background-color) 14%,
-      transparent
-    ) !important;
-    backdrop-filter: blur(var(--border-radius-large)) !important;
-    /* color: light-dark(var(--color-gray-05), var(--color-gray-100)) !important; */
-  }
-
-  .search-button {
-    /* fill: color-mix(
-      in srgb,
-      light-dark(var(--color-gray-05), var(--color-gray-100)) 70%,
-      transparent
-    ) !important; */
-  }
-
-  .search-button:focus,
-  .search-button:hover {
-    background-color: color-mix(
-      in srgb,
-      var(--newtab-element-hover-color) 14%,
-      transparent
-    ) !important;
-  }
-
-  .top-sites-list {
-    grid-template-columns: repeat(3, auto) !important;
-    gap: var(--space-large) !important;
-  }
-
-  @media (min-width: 528px) {
-    .top-sites-list {
-      grid-template-columns: repeat(4, auto) !important;
-    }
-  }
-
-  @media (min-width: 752px) {
-    .top-sites-list {
-      grid-template-columns: repeat(6, auto) !important;
-    }
-  }
-
-  @media (min-width: 976px) {
-    .top-sites-list {
-      grid-template-columns: repeat(8, auto) !important;
-    }
-  }
-
-  .top-sites-list .hide-for-narrow {
-    display: inline-block !important;
-  }
-
-  .top-site-outer {
-    width: 96px !important;
-    margin-block-end: 0 !important;
-  }
-
-  .top-site-outer .top-site-inner > a {
-    padding: var(--space-large) var(--space-large) var(--space-small) !important;
-    backdrop-filter: blur(var(--border-radius-large)) !important;
-    border-radius: var(--border-radius-large) !important;
-  }
-
-  .top-sites-list:not(.dnd-active) .top-site-outer {
-    background: color-mix(in srgb, var(--button-text-color-hover) 14%, transparent) !important;
-  }
-
-  .top-sites-list:not(.dnd-active) .top-site-outer:is(.active, :focus, :hover) {
-    box-shadow: 0 2px 8px 0 var(--newtab-section-card-box-shadow-color);
-  }
-
-  .top-site-outer .title {
-    background: none !important;
-    box-shadow: none !important;
+  /* Popup menus (e.g. the new tab's top site and widget menus): `font: menu` on the
+     panel-list host. Its items inherit it.
+     Firefox: panel-list.css */
+  panel-list {
     font-family: var(--default-font-family) !important;
-    line-height: var(--space-large) !important;
   }
 
-  .top-site-outer .tile {
+  /* Info tables (about:support, about:profiles…), and the buttons in them, which inherit it.
+     Firefox: info-pages.css, `table { font: message-box }` */
+  table {
+    font-family: inherit !important;
+  }
+}
+
+/* The menu of about:logins (import / export…), and its items, which inherit it.
+   Firefox: menu-button.css, `.menu { font: menu }` */
+@-moz-document url("about:logins") {
+  .menu {
+    font-family: inherit !important;
+  }
+}
+
+
+/* ==== New tab (nova) ==== */
+
+/* A color resolved where it's declared (light-dark() included) and inherited as that color:
+   the cards' background for the new tab's buttons, whose insides use another color scheme. */
+@property --custom-card-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@-moz-document url("about:home"), url("about:newtab") {
+
+  /* ---- Base ---- */
+
+  :root {
+    /* rem = 16px, like the rest of the browser, so the --space-* tokens (0.125rem…2rem) land
+       on whole pixels: 2/4/8/12/16/24/32. The new tab sets its root font size to 15px.
+       Firefox: activity-stream.css, `:root { font-size: var(--font-size-root) }` */
+    --font-size-root: 16px !important;
+    /* nova's layout column is a quarter of a 300px ad (IAB Medium Rectangle): 75px. 288px makes
+       it 72px, on the 4px grid; every width built from columns (top sites, search box, story
+       cards, widgets…) follows. Not nova's breakpoints, though: those are written in px.
+       Firefox: activity-stream.css, `:root { --mrec-width: 300px; --col-width: calc(var(--mrec-width) / 4) }` */
+    --mrec-width: 288px !important;
+    /* Frosted glass. Neither Firefox nor nova has a blur token */
+    --custom-backdrop-blur: 16px;
+  }
+
+  /* ---- Fonts ---- */
+
+  /* Top site titles use the system font (`.top-site-outer .title { font: caption }`); keep its
+     size, take the UI font */
+  .top-site-outer .title {
+    font-family: var(--default-font-family) !important;
+  }
+
+  /* (Form controls, e.g. the search box: with the other about: pages, above) */
+
+  /* ---- Page layout ----
+     nova's page (`.container`, container `outer-grid`) is a 3-column grid: 144px side columns
+     (the Firefox logo top left, a single widget top right) and the content column, whose top
+     sites wrap at nova's own breakpoints and hide the sites that don't fit (.nova-hide-for-*).
+     Here instead:
+     - no side columns' contents; the search box and the top sites span the whole row, and the
+       side columns can shrink to nothing, so the page can be as narrow as a row of 4 sites
+       (nova's minimum is 682px);
+     - the search box and the top sites sit at the bottom of the window;
+     - 8 sites a row, 6 below a 652px page, 4 below 500px, all 32 always shown.
+     Firefox: activity-stream.css, `.nova-enabled.container { … }`, `.nova-enabled .top-sites-list`,
+     `.nova-hide-for-*` */
+  .nova-enabled.container {
+    grid-template-columns:
+      minmax(0, var(--side-col-width)) minmax(0, var(--content-max-width)) minmax(0, var(--side-col-width)) !important;
+    /* rows 4px apart (nova: 12px, --space-medium), e.g. between the search box and the top sites */
+    row-gap: 4px !important;
+    /* The page fills the window (below the outer wrapper's 24px top padding). Rows 1–2 (nova:
+       62.5px each, --row-height, for the logo) are sized by what's in them, now nothing; row 3
+       takes the spare height. The search box spans rows 1–3 and sits at their bottom, right
+       above the top sites (row 4), so in a short window it can rise to the top of the page
+       before the page scrolls.
+       The bottom padding is 24px, like the sides; under the last titles there's also the
+       content grid's empty second row (12px gap, --space-medium) and this grid's last row
+       (4px gap, nothing in it), so they end 40px above the window's bottom.
+       Firefox: activity-stream.css, `.nova-enabled.container { grid-template-rows: repeat(2, var(--row-height)) }` */
+    min-height: calc(100vh - 24px);
+    grid-template-rows: auto auto 1fr !important;
+    padding-block-end: 24px !important;
+  }
+
+  .nova-enabled.container > .search-wrapper {
+    grid-row: 1 / span 3 !important;
+    align-self: end;
+  }
+
+  /* The side columns' contents: the Firefox logo (top left, which the search box would run
+     into in a short narrow window) and the single-widget sidebar (top right; only the weather
+     widget goes there, and it isn't offered here: not available in this region/language).
+     Firefox: activity-stream.css, `.nova-enabled .sidebar-inline-start` / `.sidebar-inline-end` */
+  .nova-enabled :is(.sidebar-inline-start, .sidebar-inline-end) {
+    display: none !important;
+  }
+
+  /* Sites a row, for the top sites and the search box's width. The queries see the container's
+     content box, the page minus its 24px padding a side: 604px / 452px = a 652px / 500px page,
+     each just wide enough for its row of 8 / 6 sites (n × 72px + (n − 1) × 4px) */
+  .nova-enabled.container > .search-wrapper,
+  .nova-enabled.container .content {
+    grid-column: 1 / -1 !important;
+    --custom-top-sites-per-row: 8;
+  }
+
+  @container outer-grid (inline-size < 604px) {
+    .nova-enabled.container > .search-wrapper,
+    .nova-enabled.container .content {
+      --custom-top-sites-per-row: 6;
+    }
+  }
+
+  @container outer-grid (inline-size < 452px) {
+    .nova-enabled.container > .search-wrapper,
+    .nova-enabled.container .content {
+      --custom-top-sites-per-row: 4;
+    }
+  }
+
+  /* The content grid's own columns are narrower than the page: let the top sites overflow
+     them, centered */
+  .nova-enabled .top-sites-list-wrapper {
+    justify-self: unsafe center !important;
+    width: max-content !important;
+  }
+
+  .nova-enabled .top-sites-list {
+    grid-template-columns: repeat(var(--custom-top-sites-per-row), var(--col-width)) !important;
+    margin-inline: 0 !important;
+  }
+
+  .top-sites-list > .top-site-outer[class*='hide-for'] {
+    display: block !important;
+  }
+
+  /* ---- Search box ---- */
+
+  /* 24px above and below it, nothing outside (nova: 32px below). With the 4px row gap and the
+     tile's 8px inside its row (see "Top sites"), the tiles are 36px under the search box.
+     nova drops the padding to 0 in windows up to 700px tall; this keeps it at any height.
+     Firefox: activity-stream.css, `.search-wrapper { margin-block: var(--space-xxlarge) … }`,
+     `@media (height <= 700px) { .search-wrapper { padding: 0 } }` */
+  .search-wrapper {
+    margin-block-end: 0 !important;
+    padding-block: var(--space-xlarge) !important;
+  }
+
+  /* As wide as the row of tiles: the row minus the 4px between each tile and its column's edge
+     at either end */
+  .nova-enabled .search-inner-wrapper {
+    width: calc(var(--custom-top-sites-per-row) * var(--col-width) + (var(--custom-top-sites-per-row) - 1) * 4px - 2 * 4px) !important;
+  }
+
+  /* Frosted, the cards' background (opaque in nova). The input is inside
+     content-search-handoff-ui's shadow DOM; its background comes from this variable.
+     Firefox: contentSearchHandoffUI.css, `#newtab-search-text { background: var(--content-search-handoff-ui-background-color) … }` */
+  #newtab-search-text {
+    --content-search-handoff-ui-background-color: var(--newtab-background-card) !important;
+    backdrop-filter: blur(var(--custom-backdrop-blur));
+  }
+
+  /* The suggestions dropdown under it (also in content-search-handoff-ui's shadow DOM), frosted
+     the same way. Its parts paint opaque backgrounds of their own on top (the "search with"
+     header, the other engines' row, the settings button: --newtab-background-color(-secondary),
+     which the dropdown redefines for itself); they're made see-through. The highlight on the
+     selected / hovered row stays.
+     Firefox: contentSearchHandoffUI.css, `.contentSearchSuggestionTable { …; background-color: var(--newtab-background-color) }` */
+  .contentSearchSuggestionTable {
+    background-color: var(--newtab-background-card) !important;
+    backdrop-filter: blur(var(--custom-backdrop-blur));
+    /* rounded like the top site tiles (nova: square) */
     border-radius: var(--border-radius-medium) !important;
-    box-shadow: none !important;
   }
 
-  .top-sites-list:not(.dnd-active) .top-site-outer:is(.active, :focus, :hover) .tile {
-    box-shadow: none !important;
+  /* the settings button is the dropdown's last row: its hover highlight gets the same bottom
+     corners */
+  .contentSearchSuggestionTable > .contentSearchSettingsButton {
+    border-end-start-radius: var(--border-radius-medium) !important;
+    border-end-end-radius: var(--border-radius-medium) !important;
   }
-  .top-site-outer:hover .tile,
-  .top-site-outer:focus .tile {
+
+  .contentSearchSuggestionTable :is(.contentSearchHeader, .contentSearchOneOffsTable):not(:hover, .selected, :active) {
+    background-color: transparent !important;
+  }
+
+  /* ---- Top sites ---- */
+
+  /* 12px apart: the 64px tiles sit centered in 72px columns (4px either side), with a 4px gap
+     between the columns (nova's is 12px, --space-medium). Grown to 72px on hover, a tile is
+     8px from its neighbours' tiles.
+     Rows 12px apart (nova: 16px). A tile sits at the bottom of its 72px row (`align-self:
+     end`), 8px down, so a title is 20px from the next row's tile (16px on hover).
+     Firefox: activity-stream.css, `.nova-enabled .top-sites-list { column-gap: …; row-gap: … }` */
+  .top-sites-list {
+    column-gap: 4px !important;
+    row-gap: 12px !important;
+  }
+
+  /* Frosted backdrop behind each icon (its translucent 64px .tile, 80% in nova) */
+  .top-site-outer .tile {
+    backdrop-filter: blur(var(--custom-backdrop-blur));
+  }
+
+  /* …and it stays that way on hover / keyboard focus, where nova makes it opaque.
+     Firefox: activity-stream.css, `… .top-site-outer:is(:has(.top-site-inner:hover), …) .tile { background-color: var(--newtab-background-color-secondary) }` */
+  .top-sites-list:not(.dnd-active) .top-site-outer:is(:has(.top-site-inner:hover), :has(.top-site-inner :focus-visible)) .tile {
     background-color: var(--newtab-background-card) !important;
   }
 
-  .top-site-outer .tile .icon-wrapper {
-    width: 64px !important;
-    height: 64px !important;
-    border-radius: var(--border-radius-medium) !important;
+  /* On hover nova grows the 64px tile to the column width from its top edge, so the icon
+     inside moves up. Grow it to 72px around its center instead: the -4px block margins keep
+     its place in the layout (horizontally it's centered by `margin: 0 auto` already), so the
+     icon and title stay put. Only with motion allowed, as nova's.
+     Firefox: activity-stream.css, `@media (prefers-reduced-motion: no-preference) { … .tile { width: var(--col-width); height: var(--col-width) } }` */
+  @media (prefers-reduced-motion: no-preference) {
+    .top-site-outer .tile {
+      transition: width 0.1s ease-out, height 0.1s ease-out, margin-block 0.1s ease-out !important;
+    }
+
+    .top-sites-list:not(.dnd-active) .top-site-outer:is(.active, :has(.top-site-inner:hover), :has(.top-site-inner :focus-visible)) .tile {
+      width: 72px !important;
+      height: 72px !important;
+      margin-block: -4px !important;
+    }
+
+    /* The icon grows with it, 40px → 48px. The tile centers it, and the image follows the
+       wrapper's size (height: 100%), so it's laid out at 48px rather than scaled up.
+       Firefox: activity-stream.css, `.top-site-outer .tile .icon-wrapper { width: 40px; … }` */
+    .top-site-outer .tile .icon-wrapper {
+      transition: width 0.1s ease-out, height 0.1s ease-out;
+    }
+
+    .top-sites-list:not(.dnd-active) .top-site-outer:is(.active, :has(.top-site-inner:hover), :has(.top-site-inner :focus-visible)) .tile .icon-wrapper {
+      width: 48px !important;
+      height: 48px !important;
+    }
   }
 
-  .top-site-outer .tile .top-site-icon {
-    border-radius: var(--border-radius-medium) !important;
+  /* The pin and the menu button sit at fixed spots in the column (6px / 2px from its top
+     corners), which matched the corners of nova's column-wide hovered tile. Anchor them to the
+     tile itself instead, so they follow its corners as it grows, both centered 12px from its
+     edges: the 12px pin 6px in, the 24px menu button flush with the corner.
+     `anchor-scope` keeps each one to its own site's tile.
+     Firefox: activity-stream.css, `.top-site-outer .icon-pin-small` / `.context-menu-button` */
+  .top-site-outer {
+    anchor-scope: --custom-tile, --custom-menu-button;
   }
 
-  .top-site-outer .tile .top-site-icon.default-icon {
-    background-size: 32px !important;
-    height: 32px !important;
-    width: 32px !important;
-    border-radius: var(--border-radius-small) !important;
+  .top-site-outer .tile {
+    anchor-name: --custom-tile;
   }
 
   .top-site-outer .icon-pin-small {
-    height: var(--space-large) !important;
-    width: var(--space-large) !important;
-    inset-block-start: var(--space-xsmall) !important;
-    inset-inline-start: var(--space-xsmall) !important;
+    inset-block-start: calc(anchor(--custom-tile start) + 6px) !important;
+    inset-inline-start: calc(anchor(--custom-tile start) + 6px) !important;
+    inset-inline-end: auto !important;
   }
 
   .top-site-outer .context-menu-button {
-    height: var(--space-large) !important;
-    width: var(--space-large) !important;
-    inset-block-start: var(--space-xsmall) !important;
-    inset-inline-end: var(--space-xsmall) !important;
-    border-radius: var(--space-small) !important;
+    inset-block-start: anchor(--custom-tile start) !important;
+    inset-inline-end: anchor(--custom-tile end) !important;
+    inset-inline-start: auto !important;
+    anchor-name: --custom-menu-button;
   }
 
-  .top-site-outer .context-menu {
-    inset-block-start: calc(var(--space-large) + var(--space-xlarge));
+  /* The menu it opens: a corner on the button's opposite corner. panel-list's script picks the
+     side (valign / align attributes: below unless there's no room, starting at the button's
+     left unless it would overflow) and sets left/top, rounded to whole pixels, so it ends up
+     half a pixel off when the button sits on a half pixel. Anchor it to the button exactly
+     instead, on the side the script picked.
+     Firefox: panel-list.mjs, setAlign() */
+  .top-site-outer panel-list[valign='bottom'] {
+    top: anchor(--custom-menu-button bottom) !important;
+    bottom: auto !important;
   }
 
-  .context-menu {
-    background-color: color-mix(
-      in srgb,
-      var(--newtab-background-color-secondary) 86%,
-      transparent
-    ) !important;
-    backdrop-filter: blur(var(--border-radius-large)) !important;
+  .top-site-outer panel-list[valign='top'] {
+    top: auto !important;
+    bottom: anchor(--custom-menu-button top) !important;
   }
 
-  .personalize-button {
-    background-color: color-mix(
-      in srgb,
-      var(--newtab-weather-background-color) 86%,
-      transparent
-    ) !important;
-    backdrop-filter: blur(var(--border-radius-large)) !important;
+  .top-site-outer panel-list[align='left'] {
+    left: anchor(--custom-menu-button left) !important;
+    right: auto !important;
   }
 
-  .customize-menu-animate-wrapper {
-    background-color: color-mix(
-      in srgb,
-      var(--newtab-background-color-secondary) 86%,
-      transparent
-    ) !important;
-    backdrop-filter: blur(var(--border-radius-large)) !important;
+  .top-site-outer panel-list[align='right'] {
+    left: auto !important;
+    right: anchor(--custom-menu-button right) !important;
   }
 
-  .customize-menu .close-button-wrapper {
-    background-color: unset !important;
+  /* Title outline (top sites, and the widgets section's heading), so it reads over any part
+     of the wallpaper: a 1px outline in the page background color (light around nova's dark
+     text on a light wallpaper, dark around light text on a dark one), painted under the
+     letters (the stroke is centered on the glyph edge, so 2px wide shows 1px outside), and a
+     glow in the text color around that. Shadows are cast by the letters alone and painted
+     under the outline, so the glow has to reach past it */
+  .top-site-outer .title,
+  .widgets-title-heading h1 {
+    -webkit-text-stroke: 2px var(--newtab-background-color);
+    paint-order: stroke fill;
+    text-shadow:
+      0 0 3px color-mix(in srgb, var(--newtab-contextual-text-primary-color) 90%, transparent),
+      0 0 6px color-mix(in srgb, var(--newtab-contextual-text-primary-color) 50%, transparent);
+  }
+
+  /* Titles: one line (nova: up to two, always reserving two), 16px line height (nova: the
+     font's normal one, ~16.3px for Noto Sans and more for the CJK fallback, so titles with
+     Chinese were taller), still 8px below the tile's row.
+     Firefox: activity-stream.css, `.top-sites-list .top-site-outer .title .title-label { min-height: 2lh; … }` */
+  .top-site-outer .title .title-label {
+    line-height: 16px !important;
+    min-height: 1lh !important;
+    white-space: nowrap !important;
+    -webkit-line-clamp: none !important;
+  }
+
+  /* ---- Popup menus (top sites, widgets…) ---- */
+
+  /* Frosted like the rest (the font is set with the other about: pages, above).
+     Firefox: panel-list.css, `background-color: var(--panel-list-background-color)` */
+  panel-list {
+    --panel-list-background-color: var(--newtab-background-card) !important;
+    backdrop-filter: blur(var(--custom-backdrop-blur));
+  }
+
+  /* ---- Customize button (bottom right) ---- */
+
+  /* Frosted: the cards' background instead of the accent color, and a blur. No change on
+     hover; pressed gets darker, by as much as nova's pressed accent color does (#764EDD →
+     #3E2976: OKLCH lightness 0.547 → 0.352, × 0.644).
+     The circle is inside moz-button's shadow DOM, so the variables are set on the host (they
+     inherit in) and the blur goes on the host, rounded to the same shape. The circle itself is
+     color-scheme: light (for white text on the accent color), which would turn the card's
+     light-dark() white there: --custom-card-color resolves it on the host (the page's scheme)
+     and passes the resolved color in.
+     Firefox: moz-button.css, `&[type="primary"] { background-color: var(--button-background-color-primary) }` */
+  moz-button.open-customization-button {
+    --custom-card-color: var(--newtab-background-card);
+    --button-background-color-primary: var(--custom-card-color) !important;
+    --button-background-color-primary-hover: var(--custom-card-color) !important;
+    --button-background-color-primary-active: oklch(from var(--custom-card-color) calc(l * 0.644) c h / alpha) !important;
+    border-radius: 9999px;
+    backdrop-filter: blur(var(--custom-backdrop-blur));
+  }
+
+  /* ---- Customize panel ---- */
+
+  /* 418px wide in nova, sized for the 15px root (= 27.87rem), but its contents are in rem: at
+     16px its padding alone grows from 22.5px to 24px a side. 28rem keeps the same proportion
+     (448px).
+     Firefox: activity-stream.css, `.customize-menu.nova-enabled { width: 418px }` */
+  .customize-menu.nova-enabled {
+    width: 28rem !important;
+  }
+
+  /* Frosted: the cards' background (80% instead of the panel's 96%) and a blur.
+     Firefox: activity-stream.css, `.customize-menu { --customize-menu-bg: color-mix(…) }` */
+  .customize-menu {
+    --customize-menu-bg: var(--newtab-background-card) !important;
+  }
+
+  .customize-menu.nova-enabled {
+    backdrop-filter: blur(var(--custom-backdrop-blur));
+  }
+
+  /* The "manage more settings" footer covers the list scrolling under it by painting the panel
+     background again, plus a 40px fade above it. On a translucent panel that second layer
+     shows as a darker block (and a blur on the footer only sees the panel: backdrop root).
+     Instead the footer is transparent and the scrolling list fades out above it: fully gone
+     under the footer, fading over the 40px above, as nova's fade did. The footer is 72px tall
+     (24px padding + 24px link + 24px padding) at the bottom of the panel, but the list stops
+     16px short of it (the panel's bottom padding), so 56px of the list is under it.
+     FRAGILE: measured; re-measure if the panel or the footer changes.
+     Firefox: activity-stream.css, `.customize-menu-content .manage-settings-footer` */
+  .customize-menu-content .manage-settings-footer {
+    background: none !important;
+  }
+
+  .customize-menu-content .manage-settings-footer::before {
+    display: none !important;
+  }
+
+  .customize-menu-content .home-section {
+    mask-image: linear-gradient(to bottom, black calc(100% - 56px - 40px), transparent calc(100% - 56px));
+  }
+
+  /* The subpanels slide in over the whole panel with an opaque background
+     (--newtab-background-color-secondary), covering its frosted glass. Make them see-through
+     and hide what they cover instead: the main list and the footer, while `.subpanel-open` is
+     set. The subpanels live inside the main list, so they're made visible again, and the list's
+     bottom fade (mask above) is dropped as it would cut them too.
+     There are four (CUSTOMIZE_SUBPANELS in the bundle): sections, themes and widgets
+     (*-mgmt-panel) and a wallpaper category ("Your images" and the others,
+     .wallpaper-list.category). FRAGILE: a new kind of subpanel shows up blank until it's added
+     here.
+     Firefox: activity-stream.css, `.sections-mgmt-panel, .widgets-mgmt-panel, .themes-mgmt-panel`
+     and `.wallpaper-list.category { background-color: … }` */
+  :is(.sections-mgmt-panel, .widgets-mgmt-panel, .themes-mgmt-panel, .wallpaper-list.category) {
+    background-color: transparent !important;
+    visibility: visible;
+  }
+
+  .customize-menu-content.subpanel-open > :is(.home-section, .manage-settings-footer) {
+    visibility: hidden;
+  }
+
+  .customize-menu-content.subpanel-open > .home-section {
+    mask-image: none;
+  }
+
+  /* With the subpanels see-through, the panel's close button (top right) shows through them,
+     but the subpanels sit above its row (z-index 2 vs 1) and their header spans the width, so
+     clicking it hit the subpanel. Lift the row above them; it still closes the whole panel.
+     The row spans the panel's width, so it lets clicks through to the subpanel's back button
+     under it; only the close button takes them.
+     Firefox: activity-stream.css, `.customize-menu-content .close-button-wrapper { z-index: 1 }` */
+  .customize-menu-content .close-button-wrapper {
+    z-index: 3 !important;
+    pointer-events: none;
+
+    & #close-button {
+      pointer-events: auto;
+    }
+  }
+
+  /* Wallpaper position, which Firefox has no UI for. An uploaded wallpaper's position is part
+     of its file name (wallpaper/library/v1-<type>-<theme>-<position>-<number>-<uuid>); at every
+     startup Firefox copies it into the pref
+     browser.newtabpage.activity-stream.newtabWallpapers.customWallpaper.position, which the page
+     uses as the background-position (also whenever a saved wallpaper is applied, live). So
+     changing that pref doesn't last: `task wallpaper:position -- <position> [number]` renames
+     the file instead (Firefox closed; without arguments it lists them). Nine positions:
+       topleft     top     topright
+       left        center  right
+       bottomleft  bottom  bottomright
+     Uploads are always named "center". With background-size: cover it only moves the image
+     along the axis that gets cropped.
+     This shows the same note under the panel's wallpaper toggle (pseudo-element text, so it
+     can't be selected or copied).
+     FRAGILE: #wallpapers-toggle is nova's moz-toggle; a ::after on the host renders after its
+     shadow content.
+     Firefox: newtab's lib/Wallpapers/WallpaperFileNames.mjs and WallpaperFeed.sys.mjs
+     (broadcastAppliedWallpaper()) */
+  #wallpapers-toggle::after {
+    content: '位置：關閉 Firefox 後執行\A'
+      'task wallpaper:position -- <位置> [編號]\A'
+      'topleft     top     topright\A'
+      'left        center  right\A'
+      'bottomleft  bottom  bottomright\A'
+      '存在檔名裡，about:config 改了重啟會被蓋回\A'
+      '重新上傳的圖片一律是 center，只對自訂圖片有效';
+    display: block;
+    margin-block-start: 8px;
+    white-space: pre;
+    font-family: var(--monospace-font-family);
+    font-size: var(--font-size-small);
+    line-height: 1.5;
+    color: var(--text-color-deemphasized);
+  }
+
+  /* ---- Widgets ---- */
+
+  /* Frosted widget cards: the ones with nova's translucent card background
+     (--newtab-background-card, 80%): clocks, focus timer, lists, picture of the day, stocks,
+     recent searches, the "add widget" button, and the story cards.
+     Firefox: activity-stream.css, `.nova-enabled .clocks-widget { background-color: var(--newtab-background-card) }`, … */
+  .nova-enabled :is(.clocks-widget, .focus-timer, .lists, .picture-of-the-day, .stocks, .recent-searches, .widgets-add-button),
+  :is(.ds-card-grid, .widgets-row-ad-cell) .sections-card-ui {
+    backdrop-filter: blur(var(--custom-backdrop-blur));
+  }
+
+  /* …and they stay that way on hover / focus, where nova makes them opaque */
+  .nova-enabled :is(.clocks-widget, .focus-timer, .lists, .picture-of-the-day, .stocks, .recent-searches, .widgets-add-button):is(:hover, :focus-within),
+  :is(.ds-card-grid, .widgets-row-ad-cell) .sections-card-ui:hover {
+    background-color: var(--newtab-background-card) !important;
+  }
+
+  /* The widgets section's buttons: "expand widgets" (next to the heading), its menu button
+     (top right) and "show fewer widgets" (bottom). Frosted like the customize button: the
+     cards' background, no change on hover, darker when pressed, and no border. nova gives
+     them the light color scheme over a light wallpaper (dark text, accent border on the
+     expand button); here the cards' dark one, so their text and icons read on the dark card
+     color. They're a default, a ghost and a muted moz-button, each type with its own set of
+     variables. (The heading's outline is with the top site titles'.)
+     Firefox: activity-stream.css, `.lightWallpaper .nova-enabled .widgets-section-container … { color-scheme: light }`,
+     moz-button.css `&[type~="ghost"]` / `&[type~="muted"]` */
+  moz-button:is(.widgets-expand-button, .widgets-header-context-menu-button, .widgets-row-toggle) {
+    color-scheme: dark !important;
+    --custom-card-color: var(--newtab-background-card);
+    --custom-card-color-pressed: oklch(from var(--custom-card-color) calc(l * 0.644) c h / alpha);
+    --button-background-color: var(--custom-card-color) !important;
+    --button-background-color-hover: var(--custom-card-color) !important;
+    --button-background-color-active: var(--custom-card-color-pressed) !important;
+    --button-background-color-ghost: var(--custom-card-color) !important;
+    --button-background-color-ghost-hover: var(--custom-card-color) !important;
+    --button-background-color-ghost-active: var(--custom-card-color-pressed) !important;
+    --button-background-color-ghost-selected: var(--custom-card-color) !important;
+    --button-background-color-muted: var(--custom-card-color) !important;
+    --button-background-color-muted-hover: var(--custom-card-color) !important;
+    --button-background-color-muted-active: var(--custom-card-color-pressed) !important;
+    --button-background-color-muted-selected: var(--custom-card-color) !important;
+    /* the border is `border: var(--button-border)`, already resolved at the root with the
+       accent color, so it's replaced whole; the other states set only its color */
+    --button-border: var(--button-border-width) solid transparent !important;
+    --button-border-color-hover: transparent !important;
+    --button-border-color-active: transparent !important;
+    border-radius: 9999px;
+    backdrop-filter: blur(var(--custom-backdrop-blur));
+  }
+
+  /* nova paints the menu button's background through `::part(button)` (transparent, with the
+     hover and pressed colors on top), which a user sheet can't reach. So the card is painted on
+     the button itself instead, and nova's hover / pressed layers are made transparent.
+     Must come after the rule above (same specificity).
+     Firefox: activity-stream.css, `.widgets-header-context-menu .widgets-header-context-menu-button::part(button)` */
+  moz-button.widgets-header-context-menu-button {
+    background-color: var(--custom-card-color);
+    --button-background-color-hover: transparent !important;
+    --button-background-color-active: transparent !important;
+  }
+
+  moz-button.widgets-header-context-menu-button:active {
+    background-color: var(--custom-card-color-pressed);
   }
 }
 
+
+/* ==== about:config ==== */
+
+/* Pref names and values in the code font */
 @-moz-document url("about:config") {
   #about-config-search,
   table#prefs th,
@@ -239,8 +645,25 @@
   }
 }
 
-@-moz-document url-prefix("chrome://devtools")
-{
+
+/* ==== View source ==== */
+
+/* The code font and its features, as in DevTools; the size stays Firefox's monospace size
+   (font.size.monospace.*, 16px here).
+   Firefox: viewsource.css, `#viewsource { font-family: monospace }` */
+@-moz-document url-prefix("view-source:") {
+  #viewsource {
+    font-family: var(--monospace-font-family) !important;
+    font-feature-settings: var(--monospace-font-feature-settings) !important;
+  }
+}
+
+
+/* ==== DevTools ==== */
+
+/* The panels (console, inspector, debugger…) are chrome://devtools documents; the toolbox frame
+   around them became about:devtools-toolbox in Firefox 159 */
+@-moz-document url-prefix("chrome://devtools"), url-prefix("about:devtools") {
   :root[platform='mac'],
   :root[platform='win'],
   :root[platform='linux'] {
@@ -252,10 +675,25 @@
   :root {
     --monospace-font-feature-settings:
       'calt', 'cv02', 'cv03', 'cv31', 'cv96', 'cv97', 'cv98', 'cv99', 'ss05', 'ss07', 'ss08', 'ss11';
-    --theme-code-font-size: 12px;
+    /* DevTools sets this with a more specific :root rule */
+    --theme-code-font-size: 12px !important;
   }
 
-  .devtools-monospace {
-    font-feature-settings: var(--monospace-font-feature-settings);
+  /* Code areas: .devtools-monospace text, the console input and older editors (CodeMirror 5),
+     the debugger / style editor (CodeMirror 6). The cv/ss features are Maple Mono's, so they
+     go only where the monospace font is used. */
+  .devtools-monospace,
+  .CodeMirror,
+  .cm-editor {
+    font-feature-settings: var(--monospace-font-feature-settings) !important;
+  }
+
+  /* Form controls default to the system font instead of inheriting the UI font. Not
+     !important, so DevTools' own monospace inputs (e.g. the rule view editor) keep theirs */
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
   }
 }
