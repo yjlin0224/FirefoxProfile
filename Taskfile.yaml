@@ -3,6 +3,10 @@
 # to use a specific one (e.g. `task watch PORT=1234`).
 version: '3'
 
+vars:
+  # Pinned so formatting doesn't change under you; bump it on purpose
+  PRETTIER_VERSION: 3.9.10
+
 tasks:
   default:
     desc: List the tasks
@@ -58,6 +62,31 @@ tasks:
     cmds:
       - node scripts/rdp-eval.mjs {{if .PORT}}--port {{.PORT}}{{end}} click-setup.js
       - python -I scripts/host/click-test.py
+
+  fmt:
+    desc:
+      Format the scripts, JSON and YAML with Prettier (.prettierrc.yaml; CSS, user.js and Markdown
+      excluded, see .prettierignore)
+    cmds:
+      - npx --yes prettier@{{.PRETTIER_VERSION}} --write .
+
+  fmt:check:
+    desc: Check the formatting without changing anything
+    cmds:
+      - npx --yes prettier@{{.PRETTIER_VERSION}} --check .
+
+  userjs:check:
+    desc:
+      'Check user.js: syntax, duplicates, spacing (add -- --fix), and against the running Firefox
+      (add -- --offline to skip)'
+    cmds:
+      - node scripts/userjs-check.mjs {{if .PORT}}--port {{.PORT}}{{end}} {{.CLI_ARGS}}
+
+  check:
+    desc: All checks (formatting and user.js), e.g. before a commit
+    cmds:
+      - task: fmt:check
+      - task: userjs:check
 
   mods:update:
     desc:
