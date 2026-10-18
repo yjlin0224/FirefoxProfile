@@ -39,8 +39,8 @@
  *     - Dragging Firefox's splitters writes inline heights; this file makes them inert.
  */
 
-/* Third-party mods, vendored in UserChromes/ (sources: scripts/mods.json; `task mods:update`
-   downloads them again) */
+/* Third-party mods, vendored in UserChromes/ (sources and vendored commits: scripts/mods.json;
+   `task mods:check` lists upstream changes, `task mods:update` downloads them) */
 
 @import url(UserChromes/cleaner_extensions_menu.css);
 @import url(UserChromes/iconized_content_context_menu.css);

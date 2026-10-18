@@ -12,7 +12,7 @@ Firefox Developer Edition 的介面自訂：`userChrome.css`（瀏覽器介面�
 | --- | --- |
 | `profile/chrome/userChrome.css` | 瀏覽器介面。開頭有適用環境、設計規格和「Firefox 更新後壞掉時怎麼修」 |
 | `profile/chrome/userContent.css` | 網頁內容：新分頁（nova）、about: 頁面字型、about:config、DevTools、檢視原始碼。開頭同樣有規格和修理說明 |
-| `profile/chrome/UserChromes/` | 第三方樣式（由 `userChrome.css` `@import`），來源列在 `scripts/mods.json` |
+| `profile/chrome/UserChromes/` | 第三方樣式（由 `userChrome.css` `@import`），來源網址與目前版本對應的上游 commit 列在 `scripts/mods.json` |
 | `profile/user.js` | 每次啟動都會套用的偏好設定 |
 | `reference/` | `task prefs:dump` 產生的設定頁面對照表（不會部署）：`about-preferences.defaults.js` 是 about:preferences 每個項目對應的 pref 與預設值，`about-preferences.current.js` 是同樣的行換成目前的值（含個人設定，不 commit，已列在 `.gitignore`） |
 | `scripts/` | 部署、即時重新載入、量測工具，說明見 [`scripts/README.md`](scripts/README.md) |
@@ -27,7 +27,8 @@ Firefox 更新到新的主要版本後：
 1. 開啟 Browser Toolbox，用 `scripts/` 的量測工具對照兩個 CSS 開頭的設計規格，修正跑掉的地方，做法見各檔開頭的「Firefox 更新後壞掉時怎麼修」。
 2. `task userjs:check`：找出型別不符、已經失效或已經等於預設值的設定。
 3. `task prefs:dump`，再用 `git diff reference/` 看設定頁面新增、移除或改變了哪些項目。
-4. 把這一節、`user.js` 開頭與兩個 CSS 開頭「TUNED FOR」的版本改成新版本。
+4. `task mods:check`：第三方樣式常會配合新版 Firefox 修正，有更新就用 `task mods:update` 下載並檢查差異。
+5. 把這一節、`user.js` 開頭與兩個 CSS 開頭「TUNED FOR」的版本改成新版本。
 
 ## 第一次設定
 
@@ -57,7 +58,8 @@ Firefox 更新到新的主要版本後：
 | `task wallpaper:open -- [編號]` | 用預設的看圖程式開啟那張桌布；不寫編號就把整個桌布庫複製到 `scripts/out/wallpapers/` 並開啟資料夾，看縮圖對照編號。桌布檔案沒有副檔名，所以是複製一份加上副檔名再開，原檔不動 |
 | `task wallpaper:position -- <位置> [編號]` | 設定桌布的位置（`left`、`topright` 等 9 種），不寫編號就是套用中那張。位置存在桌布檔名裡，Firefox 套用桌布和每次啟動時會依檔名重設 about:config 的值，所以要改檔名；需先關閉 Firefox |
 | `task prefs:dump` | 解析 about:preferences（在背景開一個暫時分頁，用完關掉），依側邊欄的頁面、標題、項目列出對應的 pref，按鈕開啟的對話框中有 pref 的部分（字型、色彩、Proxy、清除資料、同步項目、網站權限預設值）也列在按鈕底下：對話框在暫時分頁裡開啟、讀完直接取消，不會儲存任何東西。寫成 `reference/` 的兩個檔案：預設值和目前的值，兩份行數相同可以直接 diff。目前的值會標出已修改、`user.js` 有設定、鎖定。Firefox 更新後重跑，`git diff reference/` 就能看出設定頁面改了什麼 |
-| `task mods:update` | 重新下載第三方樣式；用 `git diff` 檢查後再部署 |
+| `task mods:check` | 檢查第三方樣式有沒有更新，不修改任何檔案：列出上游在目前版本之後改到該檔案的 commit（日期與說明），並標出在這裡被手動改過的檔案。透過 GitHub API 查詢，未登入時每小時限 60 次，可在 `.env` 設定 `GITHUB_TOKEN`，或先用 `gh auth login` 登入 GitHub CLI |
+| `task mods:update` | 把第三方樣式下載為上游最新的版本，並把對應的 commit 記錄到 `scripts/mods.json`；在這裡被手動改過的檔案會略過，加 `-- --force` 才覆寫。用 `git diff` 檢查後再部署 |
 | `task fmt` / `task fmt:check` | 用 Prettier（版本固定在 Taskfile，設定在 `.prettierrc.yaml`）格式化或檢查腳本、JSON、YAML；CSS、`user.js`、Markdown 不在範圍內 |
 | `task userjs:check` | 檢查 `user.js`：語法、重複、空白（加 `-- --fix` 修正）；Firefox 開著時再和實際設定比對（加 `-- --offline` 略過）。不檢查順序：`user.js` 是手動分組的 |
 | `task check` | 一次跑完 `fmt:check` 和 `userjs:check`，commit 前用 |

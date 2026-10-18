@@ -9,12 +9,12 @@ commands below are what the tasks run.
 | --- | --- |
 | `deploy.mjs`, `watch.mjs`, `diff.mjs`, `reload.mjs` | Deploy the repo's `profile/` to the profile in `.env` and live-reload it |
 | `rdp-eval.mjs`, `find-port.mjs` | Run JavaScript in the profile's Firefox; find its Browser Toolbox port |
-| `mods-update.mjs`, `mods.json` | Re-download the vendored third-party mods in `profile/chrome/UserChromes/` |
+| `mods-check.mjs`, `mods-update.mjs`, `mods.json` | The vendored third-party mods in `profile/chrome/UserChromes/`: `mods.json` gives each one's upstream file and the commit its copy comes from; `mods-check` lists the upstream commits since and flags copies edited here (read-only), `mods-update` downloads the latest version and records its commit. Both use GitHub's API: `GITHUB_TOKEN`, or else the GitHub CLI's token, lifts the 60-requests-an-hour limit |
 | `wallpaper-open.mjs` | Open a saved wallpaper by number (or all of them in a folder): copies it to `out/wallpapers/` with the extension its bytes call for, since the library's files have none |
 | `wallpaper-position.mjs` | List the new tab's saved wallpapers, or set one's position by renaming its file (Firefox closed): Firefox sets the position pref from the file name whenever a wallpaper is applied and at every startup |
 | `about-preferences.mjs` | Write `reference/about-preferences.{defaults,current}.js`: about:preferences page by page, each setting with the prefs it writes and their default/current values, plus the pref-holding dialogs buttons open (structure read by `browser/about-preferences.js`) |
 | `userjs-check.mjs` | Check `user.js` offline (syntax, duplicates, spacing) and against the running Firefox (type, current value, default) |
-| `lib/` | Shared: `.env` and paths (`config.mjs`), the RDP client and port finder (`rdp.mjs`), deploy (`sync.mjs`), live reload (`reload.mjs`, `apply.mjs`), the new tab's wallpaper library (`wallpapers.mjs`) |
+| `lib/` | Shared: `.env` and paths (`config.mjs`), the RDP client and port finder (`rdp.mjs`), the third-party mods' sources (`mods.mjs`), deploy (`sync.mjs`), live reload (`reload.mjs`, `apply.mjs`), the new tab's wallpaper library (`wallpapers.mjs`) |
 | `browser/` | Scripts that run **inside Firefox** (parent process, chrome privileges): measurements and `reload.js` |
 | `host/` | Scripts that run on Windows: real screen captures, pixel dumps, real mouse clicks |
 | `out/` | Their output (images, logs). Not committed |
