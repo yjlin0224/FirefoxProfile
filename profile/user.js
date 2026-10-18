@@ -25,7 +25,6 @@ user_pref("browser.search.update", false); // no daily updates of website-added 
 user_pref("browser.startup.homepage_override.mstone", "ignore");
 user_pref("browser.startup.page", 3);
 user_pref("browser.tabs.warnOnOpen", false);
-user_pref("browser.theme.windows.accent-color-in-tabs.enabled", true);
 user_pref("browser.toolbars.bookmarks.visibility", "never"); // userChrome.css: no bookmarks toolbar
 user_pref("browser.uidensity", 0); // default, pinned: userChrome.css's 32px grid is for normal density
 user_pref("browser.urlbar.keepPanelOpenDuringImeComposition", true); // keep the urlbar results open while composing with an IME
@@ -116,10 +115,13 @@ user_pref("signon.rememberSignons", false);
 user_pref("svg.context-properties.content.enabled", true);
 user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
 user_pref("toolkit.zoomManager.zoomValues", "0.1,0.125,0.2,0.25,0.3,0.3333333333333333,0.375,0.4,0.5,0.6,0.625,0.6666666666666666,0.7,0.75,0.8,0.875,0.9,1.0,1.25,1.3333333333333333,1.5,1.6666666666666667,1.75,2.0,2.5,3.0,3.5,4.0");
-user_pref("widget.windows.mica", true);
-user_pref("widget.windows.mica.popups", 1);
-user_pref("widget.windows.mica.toplevel-backdrop", 1);
-user_pref("browser.theme.native-theme", true);
+user_pref("widget.windows.mica", true); // Windows only: Mica behind the toolbars (userChrome.css is tuned for it; needs the default theme)
+user_pref("widget.windows.mica.popups", 1); // Windows only: the backdrop for menus too
+user_pref("widget.windows.mica.toplevel-backdrop", 1); // Windows only: Mica, meant for windows without tabs in the title bar (vertical tabs)
+user_pref("browser.theme.windows.accent-color-in-tabs.enabled", true); // Windows only: no effect while Mica is on; the fallback without it (with Windows' accent color on title bars)
+user_pref("browser.theme.native-theme", true); // all platforms: with the default theme, the browser UI takes the system's colors instead of Firefox's
+user_pref("widget.non-native-theme.use-theme-accent", true); // all platforms: web form controls take the system accent color too (default false)
+user_pref("widget.gtk.alt-theme.accent", true); // Linux only; default, pinned
 user_pref("gfx.webrender.compositor.force-enabled", true);
 user_pref("sidebar.revamp", true); // default, pinned: userChrome.css needs the new sidebar
 user_pref("sidebar.verticalTabs", true);
