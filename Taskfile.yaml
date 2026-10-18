@@ -109,6 +109,13 @@ tasks:
     cmds:
       - node scripts/about-preferences.mjs {{if .PORT}}--port {{.PORT}}{{end}} {{.CLI_ARGS}}
 
+  mods:check:
+    desc:
+      List the upstream commits of each third-party mod since the vendored one, and flag mods edited
+      here (changes nothing)
+    cmds:
+      - node scripts/mods-check.mjs
+
   mods:update:
     desc:
       Download the third-party mods (scripts/mods.json) at their latest upstream commit into
