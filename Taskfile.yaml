@@ -1,0 +1,38 @@
+# Firefox profile customization: edit here, deploy to the profile named in .env.
+# Every task that talks to Firefox finds the Browser Toolbox's port by itself; add PORT=1234
+# to use a specific one (e.g. `task watch PORT=1234`).
+version: '3'
+
+tasks:
+  default:
+    desc: List the tasks
+    silent: true
+    cmds:
+      - task --list
+
+  deploy:
+    desc:
+      Copy profile/ (chrome/ mirrored, user.js) to the Firefox profile, then reload what changed in
+      Firefox
+    cmds:
+      - node scripts/deploy.mjs {{if .PORT}}--port {{.PORT}}{{end}} {{.CLI_ARGS}}
+
+  watch:
+    desc: Deploy and reload on every save in profile/ (keeps running)
+    cmds:
+      - node scripts/watch.mjs {{if .PORT}}--port {{.PORT}}{{end}}
+
+  diff:
+    desc: List what deploy would change in the profile (changes nothing)
+    cmds:
+      - node scripts/diff.mjs
+
+  reload:
+    desc: Reload the deployed userChrome.css and userContent.css in Firefox
+    cmds:
+      - node scripts/reload.mjs {{if .PORT}}--port {{.PORT}}{{end}}
+
+  port:
+    desc: Print the Browser Toolbox's RDP port for the profile
+    cmds:
+      - node scripts/find-port.mjs {{if .PORT}}--port {{.PORT}}{{end}}
