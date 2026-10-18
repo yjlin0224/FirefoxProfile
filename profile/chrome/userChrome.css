@@ -1,13 +1,46 @@
 /*
-mkdir UserChromes && cd UserChromes
-curl -RO https://raw.githubusercontent.com/datguypiko/Firefox-Mod-Blur/refs/heads/master/EXTRA%20MODS/Compact%20extensions%20menu/Style%202/cleaner_extensions_menu.css
-curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_content_context_menu.css
-curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_main_menu.css
-curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_places_context_menu.css
-curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_tabs_context_menu.css
-curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/iconized_textbox_context_menu.css
-curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/heads/master/chrome/privatemode_indicator_as_menu_button.css
-*/
+ * TUNED FOR
+ *   Firefox 159 Developer Edition (Oct 2026), Windows 11 (Mica + native theme, 200% scaling),
+ *   browser.nova.enabled, sidebar.revamp, sidebar.verticalTabs, sidebar.visibility =
+ *   always-show or expand-on-hover, sidebar on the left.
+ *
+ * DESIGN SPEC: what "correct" looks like (scripts/browser/ measures all of it)
+ *   - Grid: toolbar buttons, tabs, pinned tabs, group rows and sidebar buttons all have 32px
+ *     backgrounds, 4px apart and 4px from edges. A clickable area reaches 2px past its
+ *     background (tabs also reach the sidebar edge sideways), so neighbours split each gap.
+ *   - Toolbar: menu button first; icons at x = 4, 40, ... 220; urlbar starts at x = 256.
+ *   - Sidebar: 256px expanded (7 * 32 + 8 * 4), 40px collapsed (32 + 2 * 4).
+ *     Pinned tabs: 32px circles, 7 per row right under the 7 toolbar icons; the first row's
+ *     top = the page area's top (4px below the toolbar icons).
+ *     Bottom buttons: a row of 7 (expanded) / a column (collapsed), 4px apart.
+ *     Dividers: 1px var(--tabstrip-inner-border), 4px from what they separate; none between
+ *     pinned and regular tabs when expanded.
+ *   - Page: no border; glow 0 0 2px 2px var(--chrome-content-separator-color). Split view:
+ *     4px gap, right and bottom; 0 at the top and on the sidebar side; the focused page
+ *     glows in var(--focus-outline-color).
+ *   - Identical in every UI density, both sidebar modes, private windows, windowed or maximized.
+ *
+ * WHEN A FIREFOX UPDATE BREAKS SOMETHING
+ *   1. Measure with scripts/ (see scripts/README.md) and compare against the spec above.
+ *   2. Most rules override Firefox *variables*. A value that silently stops applying usually
+ *      means the variable was renamed (e.g. --toolbarbutton-outer-padding became
+ *      --toolbarbutton-padding-outer): search the Firefox file named in the section's
+ *      "Firefox:" note, via the Browser Toolbox's Style Editor or, in its console,
+ *      fetch("chrome://browser/skin/tabbrowser/tabs.css").then((r) => r.text()).
+ *   3. "FRAGILE:" marks rules that depend on Firefox internals or hard-coded Firefox values.
+ *   Constraints that shaped this file:
+ *     - userChrome.css rules reach into shadow DOM, but ::part() and :host() don't work from
+ *       here and selectors can't cross the shadow boundary (use attributes inside it).
+ *       Container queries and inherited custom properties do see through it.
+ *     - CSS nesting can't carry a pseudo-element (`.x & {}` under `...::after` is dropped)
+ *       and :has() can't be nested.
+ *     - Web content paints over .browserContainer's outline and inset shadows; draw over it
+ *       with ::after, or use an outer shadow.
+ *     - Dragging Firefox's splitters writes inline heights; this file makes them inert.
+ */
+
+/* Third-party mods, vendored in UserChromes/ (sources: scripts/mods.json; `task mods:update`
+   downloads them again) */
 
 @import url(UserChromes/cleaner_extensions_menu.css);
 @import url(UserChromes/iconized_content_context_menu.css);
@@ -15,9 +48,11 @@ curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/head
 @import url(UserChromes/iconized_places_context_menu.css);
 @import url(UserChromes/iconized_tabs_context_menu.css);
 @import url(UserChromes/iconized_textbox_context_menu.css);
-@import url(UserChromes/privatemode_indicator_as_menu_button.css);
 
 /* Extend UserChromes/cleaner_extensions_menu.css */
+/* 32px icons + 8px button padding + 4px item margin = 56px grid cells, 8px apart. The item
+   area gets a 4px margin on top of the mod's 4px body padding and the item's 4px, so items
+   sit 12px from every panel edge; the faded list below the separator gets the same sides. */
 
 #unified-extensions-view {
   --uei-icon-size: 32px !important;
@@ -42,9 +77,15 @@ curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/head
     #unified-extensions-view
       #unified-extensions-area:has(+ .unified-extensions-list .unified-extensions-item) {
       padding-bottom: 4px !important;
+      margin-top: 4px !important;
       margin-left: 4px !important;
       margin-right: 4px !important;
       margin-bottom: 4px !important;
+
+      & + .unified-extensions-list {
+        margin-left: 4px !important;
+        margin-right: 4px !important;
+      }
     }
   }
 }
@@ -54,6 +95,28 @@ curl -RO https://raw.githubusercontent.com/MrOtherGuy/firefox-csshacks/refs/head
 #appMenu-fxa-status2[fxastatus] > toolbarbutton::before {
   background-size: cover !important;
   border-radius: var(--border-radius-circle) !important;
+}
+
+/* Private Browsing Indicator as Menu Button */
+/* Replaces UserChromes/privatemode_indicator_as_menu_button.css (MrOtherGuy/firefox-csshacks) */
+
+/* Firefox's private browsing indicators: the new toolbar button, and the old labelled one
+   (Firefox only hides the latter itself while browser.nova.enabled is on) */
+.private-browsing-indicator-button,
+.private-browsing-indicator-with-label {
+  display: none !important;
+}
+
+/* The menu button is the indicator instead, with the new button's icon, colored like it */
+:root[privatebrowsingmode='temporary'] #PanelUI-menu-button {
+  list-style-image: url('chrome://browser/skin/privatebrowsing/pbm-logo.svg') !important;
+
+  /* The icon's circle is context-fill; toolbar icons would otherwise fill it white.
+     FRAGILE: value copied from Firefox's browser-shared.css
+     (.private-browsing-indicator-button > .toolbarbutton-icon) */
+  & .toolbarbutton-icon {
+    fill: rgb(115, 56, 226) !important;
+  }
 }
 
 /* Override Global Font Family */
@@ -86,184 +149,621 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
   order: 2 !important;
 }
 
+/* The app menu opens "bottomright topright" from the menu icon, as if the button were still
+   on the right. Pull it right so the panel's left edge lines up with the icon's instead:
+   icon width − panel width (25em view + 2 * 1px border) − 4px shadow margin.
+   FRAGILE: 25em is Firefox's `#appMenu-popup panelview { width }` (panelUI-shared.css);
+   1px / 4px are the panel's border and shadow margin (popup.css) */
 #appMenu-popup {
-  margin-inline: -244px !important;
+  margin-inline-end: calc(
+    16px + 2 * var(--toolbarbutton-padding-inner) - (25em + 2 * 1px) - 4px
+  ) !important;
 }
 
 #PanelUI-menu-button {
   list-style-image: url('chrome://devtools/skin/images/browsers/firefox.svg') !important;
-}
-
-/* Adjust Spacing between Toolbar Items */
-
-:root {
-  --toolbar-start-end-padding: 4px !important;
-  --toolbarbutton-outer-padding-narrow: 2px !important;
-  --toolbarbutton-inner-padding-narrow: 8px !important;
-  --toolbarbutton-inner-padding-compact: 8px !important;
-  --urlbar-margin-inline: 2px !important;
-}
-
-#PanelUI-menu-button {
-  padding-inline-start: var(--toolbar-start-end-padding) !important;
-  padding-inline-end: var(--toolbarbutton-outer-padding) !important;
+  /* Swap Firefox's toolbar edge padding: the menu button is now first, not last */
+  padding-inline-start: var(--toolbar-padding-inline) !important;
+  padding-inline-end: var(--toolbarbutton-padding-outer) !important;
 }
 
 #nav-bar-customization-target {
   & > :is(toolbarbutton, toolbaritem):first-child,
   & > toolbarpaletteitem:first-child > :is(toolbarbutton, toolbaritem) {
-    padding-inline-start: var(--toolbarbutton-outer-padding) !important;
+    padding-inline-start: var(--toolbarbutton-padding-outer) !important;
   }
 }
 
-#confirmation-hint {
-  margin-inline-start: 252px !important;
-  margin-block-start: 4px !important;
+/* Adjust Spacing between Toolbar Items */
+
+/* Lock the final values so narrow windows, densities and mini windows don't shrink buttons.
+   Firefox: toolbarbuttons.css (:root switches these by window width / uidensity),
+   urlbar/urlbar.tokens.css (--urlbar-margin-inline). Gaps: 2 + 2 between buttons, the
+   urlbar's 2px margin + a button's 2px next to it; 4px at the toolbar's start. */
+:root {
+  --toolbar-padding-inline: 4px !important;
+  --toolbarbutton-padding-outer: 2px !important;
+  --toolbarbutton-padding-inner: 8px !important;
+  --urlbar-margin-inline: var(--toolbarbutton-padding-outer) !important;
+}
+
+/* Windowed Mode on Windows: Compensate for the Window Border */
+/* When not maximized, Windows 11 draws its 1px (DPI-scaled) window border over the top of the
+   client area (on the left it sits outside), eating the toolbar's top spacing; add it back */
+@media (-moz-platform: windows) {
+  :root[customtitlebar][sizemode='normal'] #navigator-toolbox {
+    padding-block-start: 1px !important;
+  }
+}
+
+/* Lock UI Density */
+/* Compact / touch would resize the toolbar, tabs and sidebar buttons this 32px / 4px grid is
+   built on, so keep the normal density's values (menus and panels still follow the density).
+   Firefox: tabs.css, sidebar.css, urlbar.css, variables.css (search them for "uidensity").
+   The sidebar's --button-min-height follows --tab-min-height, so the bottom buttons lock too. */
+
+:root {
+  --tab-min-height: max(32px, calc(var(--tab-label-line-height) * 1em)) !important;
+  --tab-margin-block: var(--tab-margin-block-vertical) !important;
+  --tab-collapsed-split-pill-offset: 0px !important;
+  --sidebar-launcher-button-padding-inline: var(--tab-margin-inline-inner) !important;
+  --urlbar-height: max(32px, 1.4em) !important;
+  --urlbar-container-padding-block: 4px !important;
+}
+
+/* Compact also re-sets some of them on individual elements */
+#tabbrowser-tabs[orient='vertical'] {
+  & .tabbrowser-tab {
+    --tab-min-height: inherit !important;
+    --tab-collapsed-background-width: inherit !important;
+  }
+
+  & tab-split-view-wrapper {
+    --tab-margin-inline-inner: inherit !important;
+  }
+}
+
+/* Fix Vertical Tabs Sidebar Width */
+
+:root {
+  /* 7 toolbar buttons (32px) + 8 gaps (4px), so the page edge lines up with the urlbar */
+  --custom-sidebar-width: calc(32px * 7 + 4px * 8);
+}
+
+#sidebar-container[sidebar-launcher-expanded] {
+  width: var(--custom-sidebar-width) !important;
+  /* Expand-on-hover adds a 0.5px edge to the overlaid launcher; keep the content 256px */
+  box-sizing: content-box !important;
 }
 
 /* Adjust Spacing between Tabs */
+/* Visually every gap is 4px; each tab's clickable area reaches 2px past its background,
+   so neighbouring tabs split the 4px between them.
+   Firefox: tabbrowser/tabs.css (#tabbrowser-tabs[orient="vertical"], tab-group, split view
+   rules) and tabbrowser/tab.tokens.css. FRAGILE: --tab-height-with-margin-padding hard-codes
+   Firefox's 5px of tab padding-block; recheck it if Firefox changes that padding. */
 
 :root {
-  --tab-inner-inline-margin: 4px !important;
+  /* Inline inset of tabs, groups, the new tab button and the bottom divider. Firefox also
+     derives the collapsed sidebar width from it: 32px + 2 * 4px = 40px */
+  --tab-margin-inline-inner: 4px !important;
+  /* Firefox adds 5px for the tab padding-block removed below */
   --tab-height-with-margin-padding: calc(
-    var(--tab-min-height) + (2 * var(--tab-margin-block))
+    var(--tab-min-height) + 2 * var(--tab-margin-block)
   ) !important;
-  --tab-pinned-container-margin-inline-expanded: 2px !important;
-  --tab-pinned-expanded-background-width: var(--tab-min-height) !important;
-  --tab-pinned-margin-inline-expanded: 2px !important;
 }
 
 #tabbrowser-tabs[orient='vertical'] {
-  grid-gap: 0px !important;
+  --tab-padding-block-start: 0px !important;
+  --tab-padding-block-end: 0px !important;
+  /* No drop shadow under the selected tab */
+  --tab-box-shadow-selected: none !important;
+  /* Firefox spaces pinned tabs, the splitter, the tab list and the new tab button apart */
+  gap: 0 !important;
+  /* Push the first row's 2px band out so its background starts at the page area's top edge
+     (4px below the toolbar buttons) */
+  margin-block-start: -2px !important;
 
-  #pinned-tabs-container {
-    margin-block-start: -2px !important;
+  /* Only the 2px background margin remains, including on the first tab (Firefox adds more) */
+  & .tabbrowser-tab {
+    padding-block: 0 !important;
   }
+
+  /* Rows without a tab background get the same 2px clickable band around their content */
+  & tab-group > :is(.tab-group-label-container, .tab-group-overflow-count-container) {
+    margin-block: 0 !important;
+    padding-block: 2px !important;
+  }
+
+  /* Collapsed sidebar: the close button sits on the tab's top-left corner, 2px outside the
+     background. Firefox's top: -2px assumed its 3px tab padding and now gets clipped */
+  &:not([expanded]) .tab-close-button {
+    top: calc(var(--tab-margin-block) - 2px) !important;
+    inset-inline-start: calc(var(--tab-margin-inline-inner) - 2px) !important;
+  }
+
+  /* Split view: the inner tab backgrounds sit on the same grid as every other tab (4px inset,
+     4px apart); the wrapper's outline is their 2px clickable band, halfway into the gaps */
+  & tab-split-view-wrapper {
+    --split-view-wrapper-padding: 2px !important;
+    --split-view-tab-strip-inset: var(--tab-margin-inline-inner) !important;
+    gap: 4px !important;
+    margin-block: 0 !important;
+    /* The active split view's background covers exactly its tabs; the padding stays clickable */
+    background-clip: content-box !important;
+
+    /* Firefox divides the two abutting tabs with a 1px border; the 4px gap replaces it */
+    & .tabbrowser-tab > .tab-stack {
+      border-inline-start-width: 0 !important;
+      border-block-end-width: 0 !important;
+    }
+  }
+
+  /* The "+N" counter of a collapsed group with an active tab, sized like a tab circle */
+  & .tab-group-overflow-count {
+    --tab-group-counter-size: var(--tab-min-height) !important;
+  }
+
+  /* The group label's 32px hover background plays the role of a tab background */
+  & .tab-group-label-hover-highlight {
+    margin-inline-end: var(--tab-margin-inline-inner) !important;
+  }
+
+  /* Group indent */
+  &[expanded]
+    tab-group
+    > :is(.tab-group-label-container, .tabbrowser-tab, .tab-group-overflow-count-container) {
+    margin-inline-start: var(--tab-margin-inline-inner) !important;
+  }
+
+  /* Group color bar: lined up with the label pill's left edge (2px into its hover background);
+     grouped tabs and the "+N" counter start 4px right of the bar */
+  &[expanded] tab-group {
+    --custom-group-line-start: 2px;
+
+    & .tab-group-line,
+    & > .tab-group-overflow-count-container::after {
+      inset-inline-start: var(--custom-group-line-start) !important;
+    }
+
+    & > .tabbrowser-tab .tab-background,
+    & .tab-group-overflow-count {
+      margin-inline-start: calc(
+        var(--custom-group-line-start) + var(--tab-group-line-thickness) + 4px
+      ) !important;
+    }
+
+    /* A split view in a group: its inner backgrounds start where grouped tabs' do */
+    & > tab-split-view-wrapper {
+      margin-inline-start: calc(
+        var(--tab-margin-inline-inner) + var(--custom-group-line-start) +
+          var(--tab-group-line-thickness) + 4px - var(--split-view-wrapper-padding)
+      ) !important;
+
+      /* Its bar is positioned from the inner tab background rather than the tab's edge */
+      & .tab-group-line {
+        inset-inline-start: calc(-1 * (var(--tab-group-line-thickness) + 4px)) !important;
+      }
+    }
+  }
+}
+
+/* Expand-on-hover stacks a split view's two tabs and rounds the wrapper more; lay them out
+   side by side like the normally expanded sidebar (Firefox's side-by-side rules skip this mode) */
+:root[sidebar-expand-on-hover] #tabbrowser-tabs[orient='vertical'][expanded] tab-split-view-wrapper {
+  grid-template-columns: 1fr 1fr !important;
+  border-radius: var(--tab-border-radius) !important;
+
+  & .tabbrowser-tab:first-child {
+    margin-inline-end: 0 !important;
+    padding-inline-end: 0 !important;
+  }
+
+  & .tabbrowser-tab:last-child {
+    margin-inline-start: 0 !important;
+    padding-inline-start: 0 !important;
+  }
+}
+
+/* Pinned Tabs: 32px Circles, 7 per Row, Aligned with the Toolbar Buttons */
+
+/* Firefox lays pinned tabs out on a grid of repeat(auto-fit, minmax(--tab-pinned-min-width, auto))
+   inside ::part(items-wrapper); ::part() rules don't apply from userChrome.css, so steer it
+   through its variables: 36px cells (32px circle + 2px band on each side) in 256 - 2 * 2px
+   = 7 columns, which puts the circles at 4, 40, … 220 like the toolbar buttons */
+#tabbrowser-tabs[orient='vertical'][expanded] > #pinned-tabs-container {
+  --tab-container-margin-inline-pinned-expanded: 2px !important;
+  --tab-pinned-min-width: calc(var(--tab-min-height) + 2 * 2px) !important;
 
   & .tabbrowser-tab {
-    padding-block: 2px !important;
-
-    & > .tab-stack > .tab-background {
-      margin-block: 0 !important;
-    }
-
-    &:not([hidden], [pinned]):first-of-type > .tab-stack {
-      margin-block-start: -2px !important;
-    }
-
-    &:not(tab-group .tabbrowser-tab):not([hidden], [pinned]):last-of-type > .tab-stack {
-      margin-block-end: -2px !important;
-    }
+    width: auto !important;
+    /* Background inset; Firefox also centers the favicon with it */
+    --tab-margin-inline-pinned-expanded: 2px !important;
   }
 }
 
-#tabbrowser-tabs[orient='vertical'][expanded] {
-  & tab-group > .tab-group-label-container {
-    margin-inline-start: var(--tab-inner-inline-margin) !important;
-    padding-inline-start: var(--tab-inner-inline-margin) !important;
-  }
+/* Expand-on-hover: Firefox only lays pinned tabs out as a grid outside this mode, so the
+   hover-expanded sidebar showed them as full-width rows. The grid lives on the pinned area's
+   ::part(items-wrapper), which ::part() from userChrome.css can't reach; user rules do apply
+   inside shadow DOM though, and container queries see through it, so a named container on
+   the pinned area scopes the rule to its slot alone (not the tab list's). >= 100px = expanded.
+   FRAGILE: relies on the arrowscrollbox's shadow markup (slot part="items-wrapper"). */
+#pinned-tabs-container[orient='vertical'] {
+  container: custom-pinned-tabs / inline-size;
+}
 
-  & tab-group > .tabbrowser-tab,
-  &[movingtab][movingtab-addToGroup]:not([movingtab-group], [movingtab-ungroup])
-    tab-group
-    > .tabbrowser-tab:is(:active, [multiselected]) {
-    margin-inline-start: var(--tab-inner-inline-margin) !important;
-
-    & .tab-background {
-      margin-inline-start: calc(var(--tab-inner-inline-margin) + 2px) !important;
-    }
+@container custom-pinned-tabs (min-width: 100px) {
+  slot[part~='items-wrapper'] {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(var(--tab-pinned-min-width), auto)) !important;
+    grid-auto-rows: var(--tab-height-with-margin-padding) !important;
+    padding-inline: var(--tab-container-margin-inline-pinned-expanded) !important;
   }
 }
 
-.tab-group-label-container {
-  #tabbrowser-tabs[orient='vertical'] & {
-    margin-block: calc(var(--tab-inner-inline-margin) + 2px) !important;
+/* The rest of Firefox's pinned-tab grid styling, which it also skips in this mode */
+:root[sidebar-expand-on-hover] #tabbrowser-tabs[orient='vertical'][expanded] > #pinned-tabs-container {
+  & .tabbrowser-tab {
+    --tab-padding-inline: calc(
+      (var(--tab-collapsed-background-width) + 2 * var(--tab-margin-inline-pinned-expanded) -
+          var(--icon-size)) / 2
+    ) !important;
+  }
 
-    tab-group:not([collapsed]) > &,
-    tab-group[collapsed][hasactivetab] > & {
-      padding-block-end: 2px !important;
-    }
+  & .tab-background {
+    margin-inline: var(--tab-margin-inline-pinned-expanded) !important;
+  }
+
+  & .tab-label-container {
+    display: none !important;
+  }
+
+  & .tab-content {
+    justify-content: center !important;
+  }
+
+  /* The favicon keeps its gap to the (hidden) label, which pushes it off-center */
+  & .tab-icon-stack > * {
+    margin-inline-end: 0 !important;
   }
 }
 
-.tab-group-overflow-count-container {
-  #tabbrowser-tabs[orient='vertical'] & {
-    min-height: calc(var(--tab-min-height) + var(--tab-inner-inline-margin)) !important;
+/* The drop zone shown while dragging a tab to pin it: top at the page area's top edge like
+   the first pinned row (2px cancels the tab list's -2px), 4px above the pinned tabs */
+#tabbrowser-tabs[orient='vertical'] > #pinned-drop-indicator[visible] {
+  margin-block: 2px !important;
+}
 
-    #tabbrowser-tabs[expanded] & {
-      margin-inline-start: var(--tab-inner-inline-margin) !important;
-    }
-  }
+/* Dragging the pinned-tabs splitter writes an arbitrary inline height on the pinned area
+   (same issue as the bottom buttons), so size it to its rows and make the splitter inert.
+   The splitter overlaps the 2px clickable bands instead of adding its own height. */
+#pinned-tabs-container[orient='vertical'] {
+  height: auto !important;
 }
 
 #vertical-pinned-tabs-splitter {
-  border-top-color: transparent !important;
+  margin-block: -2px !important;
   z-index: 1 !important;
+  pointer-events: none !important;
 }
 
-#tabbrowser-arrowscrollbox[orient='vertical']
-  > #tabbrowser-arrowscrollbox-periphery
-  > #tabs-newtab-button,
+/* Collapsed: draw it like the divider above the bottom buttons; 2px margins + the 2px
+   bands on each side keep the line 4px away from the pinned and regular tabs */
+#tabbrowser-tabs[orient='vertical']:not([expanded]) > #vertical-pinned-tabs-splitter {
+  margin-block: 2px !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  background: none !important;
+  border: none !important;
+  border-top: var(--tabstrip-inner-border) !important;
+}
+
+/* Expanded: no line (expand-on-hover would otherwise draw one), pinned and regular tabs 4px apart */
+#tabbrowser-tabs[orient='vertical'][expanded] > #vertical-pinned-tabs-splitter {
+  border: none !important;
+  background: none !important;
+}
+
+/* Above: the last tab's 2px band + the tab list's 2px end drop zone (periphery);
+   below: 4px to the bottom divider */
 #vertical-tabs-newtab-button {
-  margin-block: var(--tab-inner-inline-margin) !important;
+  margin-block: 0 4px !important;
 }
 
+/* Fade the Tab List's Scrolling Edges */
+/* Firefox overlays 16px bands painted with --toolbox-background-color, which is transparent
+   with Mica, so the fade only shows in private windows. Mask the tab list itself instead:
+   16px from opacity 0 to 1, driven by the same attributes and 150ms timing as the bands.
+   Firefox: tabbrowser/tabs.css (#tabbrowser-arrowscrollbox ::part(overflow-*-indicator)). */
+
+@property --custom-tabs-fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --custom-tabs-fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+#tabbrowser-arrowscrollbox[orient='vertical'][overflowing] {
+  --custom-tabs-fade-start: 16px;
+  --custom-tabs-fade-end: 16px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black var(--custom-tabs-fade-start),
+    black calc(100% - var(--custom-tabs-fade-end)),
+    transparent
+  ) !important;
+  transition:
+    --custom-tabs-fade-start 150ms ease,
+    --custom-tabs-fade-end 150ms ease !important;
+
+  &[scrolledtostart] {
+    --custom-tabs-fade-start: 0px;
+  }
+
+  &[scrolledtoend] {
+    --custom-tabs-fade-end: 0px;
+  }
+}
+
+/* Hide the native bands. They live in arrowscrollbox shadow DOM where ::part() and :host()
+   from userChrome.css don't apply, so this matches every arrowscrollbox's indicators;
+   only the tab strips give them a look */
+[part~='overflow-start-indicator'],
+[part~='overflow-end-indicator'] {
+  visibility: hidden !important;
+}
+
+/* Sidebar Bottom Buttons: 32px Circles with 4px Gaps */
+/* These live in sidebar-main's shadow DOM; user sheets still reach them, but selectors
+   can't see the host's [expanded], so the groups' own [orientation] tells the states apart
+   (horizontal = expanded row, vertical = collapsed column; the "more tools" group is always
+   [orientation=vertical], hence the :not(.overflow-button)).
+   Firefox: sidebar/sidebar-main.css, sidebar/sidebar-main.mjs (overflow logic, splitter),
+   moz-button (--button-outer-padding-*). */
+
+/* Dragging this splitter writes an arbitrary inline height on .buttons-wrapper, which breaks
+   the 4px bottom gap; keep the area sized to its buttons and make the splitter a plain divider */
 #sidebar-tools-and-extensions-splitter {
-  margin-block-end: 0px !important;
+  margin-block-end: 0 !important;
+  pointer-events: none !important;
+  /* Use the expanded-state divider (the tab strip's end line) in both states */
+  margin-inline: 4px !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  background: none !important;
+  border-top: var(--tabstrip-inner-border) !important;
+}
 
-  &:has(+ .buttons-wrapper > .tools-and-extensions[orientation='horizontal']) {
-    margin-block-end: -2px !important;
-    border-top-color: transparent !important;
-    z-index: 1 !important;
-  }
+/* The tab strip draws its own end line in the expanded state; the splitter now draws it */
+#tabbrowser-tabs[orient='vertical']::after {
+  display: none !important;
+}
 
-  & + .buttons-wrapper {
-    min-width: calc(var(--button-min-height) * 7 + (var(--tab-inner-inline-margin) * 8)) !important;
-    min-height: calc(
-      var(--button-min-height) * 1 + (var(--tab-inner-inline-margin) * 2)
-    ) !important;
+/* Expand-on-hover has no bottom splitter at all; the tab strip's end line (right above the
+   bottom buttons) draws the same divider instead, in both states */
+:root[sidebar-expand-on-hover] #tabbrowser-tabs[orient='vertical']::after {
+  display: block !important;
+  margin-inline: var(--tab-margin-inline-inner) !important;
+  border-bottom: var(--tabstrip-inner-border) !important;
+}
 
-    &:not(:has(> .tools-and-extensions[orientation='horizontal'])) {
-      min-width: calc(
-        var(--button-min-height) * 1 + (var(--tab-inner-inline-margin) * 2)
-      ) !important;
-      min-height: calc(
-        var(--button-min-height) * 7 + (var(--tab-inner-inline-margin) * 8)
-      ) !important;
-    }
+.buttons-wrapper {
+  height: auto !important;
+}
 
-    & > .tools-and-extensions {
-      gap: var(--tab-inner-inline-margin) !important;
-      padding: var(--tab-inner-inline-margin) !important;
+/* Expanded: a single row of 7 slots (4 + 7 * 32 + 6 * 4 + 4 = 256); with 8+ tools the
+   "more tools" button takes the last slot */
+.buttons-wrapper:has(> .tools-and-extensions[orientation='horizontal']) {
+  min-height: calc(var(--button-min-height) + 2 * 4px) !important;
+}
 
-      &[orientation='horizontal']:has(+ .tools-and-extensions) {
-        padding-inline-end: 0 !important;
-      }
+.tools-and-extensions[orientation='horizontal'] {
+  gap: 4px !important;
+  padding: 4px !important;
+  /* Expand-on-hover adds 6px above the row */
+  margin-block-start: 0 !important;
 
-      &[orientation='vertical']:has(+ .tools-and-extensions) {
-        padding-block-end: 0 !important;
-      }
-
-      &[orientation='vertical'] moz-button {
-        --button-outer-padding-inline: 0 !important;
-        --button-outer-padding-block: 0 !important;
-        --button-outer-padding-block-start: 0 !important;
-        --button-outer-padding-block-end: 0 !important;
-      }
-    }
+  &[overflowing='true'] {
+    padding-inline-end: 0 !important;
   }
 }
 
-/* Remove Border of Browser Container */
+/* Up to 7 tools always fit the expanded row. Firefox's overflow check (an IntersectionObserver)
+   can still fire mid-expand-animation; the "more tools" button then takes a slot, pushing the
+   7th tool out of view for real, so it never goes back. Don't show the button in that case.
+   FRAGILE: if the expanded width or slot count changes, update the nth-of-type(8). */
+.tools-and-extensions[orientation='horizontal']:not(:has(> moz-button:nth-of-type(8)))
+  + .overflow-button {
+  display: none !important;
+}
+
+.tools-and-extensions.overflow-button > moz-button {
+  --button-outer-padding-inline: 4px !important;
+  --button-outer-padding-block-start: 4px !important;
+  --button-outer-padding-block-end: 4px !important;
+}
+
+/* Collapsed: a single column */
+.tools-and-extensions[orientation='vertical']:not(.overflow-button) > moz-button {
+  --button-outer-padding-block: 2px !important;
+
+  &:first-of-type {
+    --button-outer-padding-block-start: 4px !important;
+  }
+
+  &:last-of-type {
+    --button-outer-padding-block-end: 4px !important;
+  }
+}
+
+/* Expand-on-hover keeps the "more tools" button under the column (4px below the last tool)
+   and pads the bottom by 6px; keep the column's 4px rhythm down to the edge */
+.buttons-wrapper:has(> .tools-and-extensions[orientation='vertical']:not(.overflow-button)) {
+  padding-block-end: 0 !important;
+
+  & > .overflow-button > moz-button {
+    --button-outer-padding-block-start: 0 !important;
+  }
+}
+
+/* Move Confirmation Hints Anchored inside the Vertical Tabs Sidebar to the Page's Top-Left */
+
+#confirmation-hint {
+  margin-block-start: 4px !important;
+
+  /* Hints anchored to the menu button or a tab would cover the pinned tabs.
+     The anchor icon sits var(--toolbar-padding-inline) from the window edge.
+     FRAGILE: message ids from browser/confirmationHints.ftl; anchors chosen in
+     browser-addons.js (menu button) and tabbrowser.js (duplicate tabs). Hints anchored
+     elsewhere (bookmark star, account button) keep Firefox's position. */
+  &:is(
+      [data-message-id='confirmation-hint-extensions-button-hidden'],
+      [data-message-id='confirmation-hint-duplicate-tabs-closed'],
+      [data-message-id='confirmation-hint-pin-tab']
+    ) {
+    margin-inline-start: calc(
+      var(--custom-sidebar-width) - var(--toolbar-padding-inline)
+    ) !important;
+  }
+
+  /* 12px corners (Firefox: a pill, --panel-border-radius 24px), concentric with the page's
+     16px corner 4px away (see Page Corners below). Popups' shared variable, set on this one */
+  --panel-border-radius: var(--border-radius-medium) !important;
+}
+
+/* Split View Pages: 4px Gap, Right and Bottom Margins; Glow Instead of Shadow and Outline */
+/* Firefox: tabbrowser/content-area.css (#tabbrowser-tabpanels[splitview]). The glow
+   variables are defined in the Browser Container section below. */
+
+#tabbrowser-tabpanels[splitview] {
+  /* No top margin: the pages start at the page area's top edge, like a single page */
+  & .split-view-panel.split-view-panel-active {
+    margin: 0 4px 4px !important;
+
+    &[column='0'] {
+      margin-inline-end: 0 !important;
+    }
+
+    &[column='1'] {
+      margin-inline-start: 0 !important;
+    }
+
+    /* The sidebar side touches the sidebar (or its panel's 4px splitter), like a single page */
+    #tabbrowser-tabbox:not([sidebar-positionend]) &[column='0'] {
+      margin-inline-start: 0 !important;
+    }
+
+    #tabbrowser-tabbox[sidebar-positionend] &[column='1'] {
+      margin-inline-end: 0 !important;
+    }
+  }
+
+  /* The 4px splitter itself is the gap between the pages (still draggable) */
+  & .split-view-splitter {
+    margin-inline: 0 !important;
+  }
+
+  /* Firefox's card shadow and faint outline give way to the same glow as a single page */
+  & .split-view-panel > .browserContainer {
+    box-shadow: var(--custom-content-glow) !important;
+    outline-style: none !important;
+  }
+
+  /* Firefox clips the unfocused page (to keep its dialogs inside), which also cut off its glow;
+     let the clip reach just as far as the glow does */
+  & > .split-view-panel:not(.deck-selected) {
+    overflow-clip-margin: calc(
+      var(--custom-content-glow-blur) + var(--custom-content-glow-spread)
+    ) !important;
+  }
+
+  /* The selected page shows Firefox's accent (focus) color in its glow instead of an outline */
+  & .split-view-panel.deck-selected > .browserContainer {
+    box-shadow: 0 0 var(--custom-content-glow-blur) var(--custom-content-glow-spread)
+      var(--focus-outline-color) !important;
+  }
+}
+
+/* Browser Container: No Border, a Glow in the Content Separator Color Instead */
+/* Firefox borders a single page on its top and sidebar side, which shifts the page by 1px.
+   Instead, glow 2px out on every side (spread 2px, blurred 2px) in that border's color:
+   outside the page, so it never covers web content. Split view pages get the same glow
+   (see above). Firefox: tabbrowser/content-area.css (.browserContainer). */
+
+:root {
+  --custom-content-glow-blur: 2px;
+  --custom-content-glow-spread: 2px;
+  --custom-content-glow: 0 0 var(--custom-content-glow-blur) var(--custom-content-glow-spread)
+    var(--chrome-content-separator-color);
+}
 
 .browserContainer {
-  outline: none !important;
-  box-shadow: none !important;
+  border: none !important;
+}
 
-  @media -moz-pref('sidebar.revamp') {
-    & {
-      outline: none !important;
-      box-shadow: none !important;
-    }
+:root:not([inDOMFullscreen]) #tabbrowser-tabpanels > :not(.split-view-panel) .browserContainer {
+  box-shadow: var(--custom-content-glow) !important;
+}
+
+/* Page Corners: 16px, the Radius of the 32px Round Buttons Next to Them */
+/* The page's rounded corner sits 4px from the round toolbar / sidebar buttons (32px, radius
+   16px); Firefox rounds it 12px (--border-radius-medium). Everything Firefox rounds to match
+   the page follows: the dimmed backdrop of tab dialogs (Firefox subtracts its 1px border,
+   gone here), the sidebar panel's top corners, and both split view pages (all four corners;
+   the unfocused one is also clipped to its corners).
+   What sits 4px inside the page corner is rounded 16 − 4 = 12px, so the curves stay 4px apart
+   all the way round: the confirmation hint (see above) and the tab dialogs (below).
+   Firefox: tabbrowser/content-area.css (--content-area-start-radius, .dialogOverlay,
+   .split-view-panel > .browserContainer), sidebar.css (--sidebar-box-start-*-radius). */
+
+#tabbrowser-tabpanels > :not(.split-view-panel) .browserContainer {
+  --content-area-start-radius: var(--border-radius-large) !important;
+}
+
+#tabbrowser-tabpanels[splitview] {
+  & .split-view-panel > .browserContainer,
+  & > .split-view-panel:not(.deck-selected) {
+    border-radius: var(--border-radius-large) !important;
   }
+}
+
+:root:not([inDOMFullscreen], [inFullscreen]) {
+  #tabbrowser-tabbox:is([sidebar-shown], [sidebar-panel-open]):not([sidebar-positionend])
+    #tabbrowser-tabpanels
+    > :not(.split-view-panel)
+    .dialogOverlay[topmost='true'] {
+    border-start-start-radius: var(--border-radius-large) !important;
+  }
+
+  #tabbrowser-tabbox:is([sidebar-positionend]:is([sidebar-shown], [sidebar-panel-open]), [ai-window-open])
+    #tabbrowser-tabpanels
+    > :not(.split-view-panel)
+    .dialogOverlay[topmost='true'] {
+    border-start-end-radius: var(--border-radius-large) !important;
+  }
+
+  #tabbrowser-tabpanels[splitview] .split-view-panel .dialogOverlay[topmost='true'] {
+    border-radius: var(--border-radius-large) !important;
+  }
+}
+
+/* The sidebar panel's corners, where Firefox rounds them (not when the launcher is hidden or
+   in fullscreen, where it sets them to 0) */
+:root:not([inDOMFullscreen], [fullscreenNavToolboxHidden]) #sidebar-container:not([hidden]) ~ #sidebar-box {
+  --sidebar-box-start-start-radius: var(--border-radius-large) !important;
+  --sidebar-box-start-end-radius: var(--border-radius-large) !important;
+}
+
+/* Tab dialogs: 4px below the page's top edge, like the confirmation hint (Firefox pulls them
+   5px up, over the toolbar's edge), still centered; their 12px corners (--border-radius-medium)
+   are already concentric with the page's.
+   Firefox: tabbrowser/content-area.css (`.dialogOverlay > .dialogBox { margin-top: -5px }`). */
+:not(.content-prompt-dialog) > .dialogOverlay > .dialogBox:not(.spotlightBox) {
+  margin-top: 4px !important;
 }
