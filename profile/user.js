@@ -1,4 +1,5 @@
 // TODO: https://searchfox.org/mozilla-release/source/modules/libpref/init/all.js
+// Checked against Firefox Developer Edition 159 with `task userjs:check` (see README.md, 適用版本)
 user_pref("accessibility.typeaheadfind", true);
 user_pref("browser.aboutConfig.showWarning", false);
 user_pref("browser.contentblocking.category", "custom");
