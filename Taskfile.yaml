@@ -36,3 +36,25 @@ tasks:
     desc: Print the Browser Toolbox's RDP port for the profile
     cmds:
       - node scripts/find-port.mjs {{if .PORT}}--port {{.PORT}}{{end}}
+
+  eval:
+    desc:
+      'Run a script from scripts/browser/ or an expression in Firefox, e.g. task eval --
+      toolbar-ruler.js (options: --tab URL, --pid PID, --raw)'
+    cmds:
+      - node scripts/rdp-eval.mjs {{if .PORT}}--port {{.PORT}}{{end}} {{.CLI_ARGS}}
+
+  capture:
+    desc:
+      'Capture the real screen, e.g. task capture -- <cssX> <cssY> <cssW> <cssH> <dpr>
+      scripts/out/name.png'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/host/capture.ps1 {{.CLI_ARGS}}
+
+  click-test:
+    desc:
+      Really click across the boundary of two tabs and report which one each click selects (don't
+      touch the mouse)
+    cmds:
+      - node scripts/rdp-eval.mjs {{if .PORT}}--port {{.PORT}}{{end}} click-setup.js
+      - python -I scripts/host/click-test.py
