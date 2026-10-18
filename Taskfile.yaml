@@ -58,3 +58,10 @@ tasks:
     cmds:
       - node scripts/rdp-eval.mjs {{if .PORT}}--port {{.PORT}}{{end}} click-setup.js
       - python -I scripts/host/click-test.py
+
+  mods:update:
+    desc:
+      Download the third-party mods (scripts/mods.json) into profile/chrome/UserChromes/; review
+      with git diff, then deploy
+    cmds:
+      - node scripts/mods-update.mjs
