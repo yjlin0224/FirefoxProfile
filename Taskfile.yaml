@@ -63,6 +63,20 @@ tasks:
       - node scripts/rdp-eval.mjs {{if .PORT}}--port {{.PORT}}{{end}} click-setup.js
       - python -I scripts/host/click-test.py
 
+  wallpaper:position:
+    desc:
+      "List the new tab's saved wallpapers, or set one's position (Firefox closed), e.g. task
+      wallpaper:position -- right 2 (no number: the applied one)"
+    cmds:
+      - node scripts/wallpaper-position.mjs {{.CLI_ARGS}}
+
+  wallpaper:open:
+    desc:
+      Open a saved wallpaper by number in the default image viewer (no number - all of them, in a
+      folder)
+    cmds:
+      - node scripts/wallpaper-open.mjs {{.CLI_ARGS}}
+
   fmt:
     desc:
       Format the scripts, JSON and YAML with Prettier (.prettierrc.yaml; CSS, user.js and Markdown
