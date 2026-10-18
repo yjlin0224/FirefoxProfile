@@ -64,20 +64,34 @@ user_pref("font.size.monospace.x-western", 16);
 user_pref("general.smoothScroll.msdPhysics.enabled", true);
 user_pref("intl.accept_languages", "zh-tw,zh,en-us,en,ja");
 user_pref("layout.css.scroll-anchoring.enabled", false);
+user_pref("network.cookie.cookieBehavior", 5); // default, pinned: custom ETP cookies = isolate cross-site cookies
+user_pref("network.http.referer.disallowCrossSiteRelaxingDefault.top_navigation", true); // part of ETP strict (rpTop), not on the custom page: sites can't loosen the referrer policy for cross-site navigations
 user_pref("network.http.windows-sso.enabled", true);
+user_pref("network.trr.mode", 5); // DNS over HTTPS off by choice: Firefox won't turn it on by itself
 user_pref("permissions.default.camera", 2);
 user_pref("permissions.default.desktop-notification", 2);
 user_pref("permissions.default.geo", 2);
 user_pref("permissions.default.microphone", 2);
 user_pref("permissions.default.xr", 2);
 user_pref("places.history.expiration.max_pages", 2147483647);
+user_pref("privacy.annotate_channels.strict_list.enabled", true); // part of ETP strict (lvl2), not on the custom page: the stricter tracker list in normal windows too
+user_pref("privacy.bounceTrackingProtection.mode", 1); // part of ETP strict (btp), not on the custom page: purge bounce trackers' data (default 3 only logs them)
 user_pref("privacy.donottrackheader.enabled", true);
 user_pref("privacy.fingerprintingProtection", true);
 user_pref("privacy.fingerprintingProtection.overrides", "+AllTargets,-CSSPrefersColorScheme,-CanvasExtractionBeforeUserInputIsBlocked,-CanvasExtractionFromThirdPartiesIsBlocked,-CanvasImageExtractionPrompt,-CanvasRandomization,-FontVisibilityBaseSystem,-FontVisibilityLangPack,-JSDateTimeUTC,-KeyboardEvents,-WidgetEvents,-WindowDevicePixelRatio");
+user_pref("privacy.fingerprintingProtection.pbmode", true); // default, pinned: custom ETP suspected fingerprinters in all windows (with privacy.fingerprintingProtection)
 user_pref("privacy.query_stripping.enabled", true);
 user_pref("privacy.query_stripping.enabled.pbmode", true);
-user_pref("privacy.query_stripping.strip_list", "__hsfp __hssc __hstc __s _hsenc _openstat dclid fbclid gbraid gclid hsCtaTracking igshid mc_eid ml_subscriber ml_subscriber_hash msclkid oft_c oft_ck oft_d oft_id oft_ids oft_k oft_lk oft_sk oly_anon_id oly_enc_id rb_clickid s_cid twclid vero_conv vero_id wbraid wickedid yclid  __hsfp __hssc __hstc __s _gl _hsenc _kx _openstat at_recipient_id at_recipient_list bbeml bsft_clkid bsft_uid dclid et_rid fb_action_ids fb_comment_id fbclid gbraid gclid guce_referrer guce_referrer_sig hsCtaTracking irclickid mc_eid ml_subscriber ml_subscriber_hash msclkid mtm_cid oft_c oft_ck oft_d oft_id oft_ids oft_k oft_lk oft_sk oly_anon_id oly_enc_id pk_cid rb_clickid s_cid ss_email_id twclid unicorn_click_id vero_conv vero_id vgo_ee wbraid wickedid yclid ymclid ysclid h_sid h_slt mkt_tok igsh igshid ref_src ref_url si __cft__[0] __tn__"); // https://github.com/brave/brave-core/blob/master/components/query_filter/utils.cc
-user_pref("privacy.trackingprotection.socialtracking.enabled", true);
+user_pref("privacy.query_stripping.strip_list", "__hsfp __hssc __hstc __s _hsenc _openstat dclid fbclid gbraid gclid hsCtaTracking igshid mc_eid ml_subscriber ml_subscriber_hash msclkid oft_c oft_ck oft_d oft_id oft_ids oft_k oft_lk oft_sk oly_anon_id oly_enc_id rb_clickid s_cid twclid vero_conv vero_id wbraid wickedid yclid  __hsfp __hssc __hstc __s _gl _hsenc _kx _openstat at_recipient_id at_recipient_list bbeml bsft_clkid bsft_uid dclid et_rid fb_action_ids fb_comment_id fbclid gbraid gclid guce_referrer guce_referrer_sig hsCtaTracking irclickid mc_eid ml_subscriber ml_subscriber_hash msclkid mtm_cid oft_c oft_ck oft_d oft_id oft_ids oft_k oft_lk oft_sk oly_anon_id oly_enc_id pk_cid rb_clickid s_cid ss_email_id twclid unicorn_click_id vero_conv vero_id vgo_ee wbraid wickedid yclid ymclid ysclid h_sid h_slt mkt_tok igsh igshid ref_src ref_url si __cft__[0] __tn__ trackid"); // https://github.com/brave/brave-core/blob/master/components/query_filter/utils.cc
+user_pref("privacy.trackingprotection.allow_list.baseline.enabled", false); // custom ETP: no exceptions to fix major site issues
+user_pref("privacy.trackingprotection.allow_list.convenience.enabled", false); // custom ETP: no exceptions to fix minor site issues
+user_pref("privacy.trackingprotection.cryptomining.enabled", true); // default, pinned: custom ETP
+user_pref("privacy.trackingprotection.emailtracking.enabled", true); // deliberate mix: email and social trackers blocked in all windows, other tracking content only in private ones (the settings page can't show this and rewrites both when its tracking toggle is used)
+user_pref("privacy.trackingprotection.emailtracking.pbmode.enabled", true);
+user_pref("privacy.trackingprotection.enabled", false); // custom ETP tracking content: private windows only (with the pbmode/emailtracking prefs)
+user_pref("privacy.trackingprotection.fingerprinting.enabled", true); // default, pinned: custom ETP known fingerprinters
+user_pref("privacy.trackingprotection.pbmode.enabled", true);
+user_pref("privacy.trackingprotection.socialtracking.enabled", true); // see emailtracking.enabled
 user_pref("svg.context-properties.content.enabled", true);
 user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
 user_pref("toolkit.zoomManager.zoomValues", "0.1,0.125,0.2,0.25,0.3,0.3333333333333333,0.375,0.4,0.5,0.6,0.625,0.6666666666666666,0.7,0.75,0.8,0.875,0.9,1.0,1.25,1.3333333333333333,1.5,1.6666666666666667,1.75,2.0,2.5,3.0,3.5,4.0");
