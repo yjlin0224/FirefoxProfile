@@ -1,0 +1,3 @@
+# LF everywhere (Firefox and Node don't mind; keeps diffs clean on Windows). Binary files are
+# detected by content, so they're left alone.
+* text=auto eol=lf

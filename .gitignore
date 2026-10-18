@@ -1,0 +1,31 @@
+# Local settings: which profile to deploy to (see .env.template), and any variants of it
+.env
+.env.*
+!.env.template
+
+# profile/ mirrors the Firefox profile folder, but only these belong in it (deploy refuses
+# anything else): a prefs.js, logins.json, key4.db or cookies.sqlite copied in by mistake
+# holds private data
+profile/*
+!profile/chrome/
+!profile/user.js
+
+# Measurement output: screenshots, rulers, logs
+scripts/out/
+
+# This Firefox's current settings (personal values: download folder, DoH, chatbot URL…);
+# the defaults file next to it is committed
+reference/about-preferences.current.js
+
+# Images: the repo has none; screenshots belong in scripts/out/, but `task capture` writes
+# wherever it's told
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.avif
+*.gif
+*.bmp
+
+# Python bytecode from scripts/host
+__pycache__/
