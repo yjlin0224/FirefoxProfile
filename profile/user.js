@@ -5,6 +5,9 @@ user_pref("browser.contentblocking.category", "custom");
 user_pref("browser.discovery.enabled", false);
 user_pref("browser.download.always_ask_before_handling_new_types", true);
 user_pref("browser.download.autohideButton", false);
+user_pref("browser.ipProtection.added", true); // built-in VPN button on the toolbar
+user_pref("browser.ipProtection.enabled", true); // built-in VPN (default false; Firefox only turns it on for some users)
+user_pref("browser.ml.chat.shortcuts", false); // no AI chatbot shortcut when selecting text
 user_pref("browser.newtabpage.activity-stream.nova.enabled", true); // default, pinned: userContent.css is written for the nova new tab
 user_pref("browser.newtabpage.activity-stream.improvesearch.handoffToAwesomebar", false);
 user_pref("browser.newtabpage.activity-stream.section.highlights.rows", 4);
@@ -15,6 +18,7 @@ user_pref("browser.nova.enabled", true); // default, pinned: userChrome.css is w
 user_pref("browser.opaqueResponseBlocking", false);
 user_pref("browser.profiles.enabled", false); // no profile group / profile switcher (the app menu entry); this profile was taken out of its group (StoreID removed from profiles.ini)
 user_pref("browser.promo.pin.enabled", false);
+user_pref("browser.promo.relay.enabled", false);
 user_pref("browser.search.suggest.enabled.private", true);
 user_pref("browser.search.update", false); // no daily updates of website-added (OpenSearch) engines; built-in engines update anyway
 user_pref("browser.startup.homepage_override.mstone", "ignore");
@@ -23,6 +27,7 @@ user_pref("browser.tabs.warnOnOpen", false);
 user_pref("browser.theme.windows.accent-color-in-tabs.enabled", true);
 user_pref("browser.toolbars.bookmarks.visibility", "never"); // userChrome.css: no bookmarks toolbar
 user_pref("browser.uidensity", 0); // default, pinned: userChrome.css's 32px grid is for normal density
+user_pref("browser.urlbar.keepPanelOpenDuringImeComposition", true); // keep the urlbar results open while composing with an IME
 user_pref("browser.urlbar.showSearchSuggestionsFirst", false);
 user_pref("browser.urlbar.trimURLs", false);
 user_pref("browser.vpn_promo.enabled", false);
@@ -71,6 +76,7 @@ user_pref("font.name.serif.zh-TW", "Noto Serif CJK TC");
 user_pref("font.size.monospace.x-unicode", 16);
 user_pref("font.size.monospace.x-western", 16);
 user_pref("general.smoothScroll.msdPhysics.enabled", true);
+user_pref("gfx.color_management.mode", 1); // color-manage all images, not only tagged ones
 user_pref("intl.accept_languages", "zh-tw,zh,en-us,en,ja");
 user_pref("layout.css.scroll-anchoring.enabled", false);
 user_pref("media.autoplay.default", 5); // block audio and video; per-site exceptions are site permissions (permissions.sqlite), not prefs
