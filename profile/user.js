@@ -121,6 +121,7 @@ user_pref("widget.windows.mica.popups", 1); // Windows only: the backdrop for me
 user_pref("widget.windows.mica.toplevel-backdrop", 1); // Windows only: Mica, meant for windows without tabs in the title bar (vertical tabs)
 user_pref("browser.theme.windows.accent-color-in-tabs.enabled", true); // Windows only: no effect while Mica is on; the fallback without it (with Windows' accent color on title bars)
 user_pref("browser.theme.native-theme", true); // all platforms: with the default theme, the browser UI takes the system's colors instead of Firefox's
+user_pref("browser.theme.dark-private-windows", false); // private windows look like the others (default true: with nova and the default theme, they get Firefox's own private-window theme, without the native theme)
 user_pref("widget.non-native-theme.use-theme-accent", true); // all platforms: web form controls take the system accent color too (default false)
 user_pref("widget.gtk.alt-theme.accent", true); // Linux only; default, pinned
 user_pref("gfx.webrender.compositor.force-enabled", true);
