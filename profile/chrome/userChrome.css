@@ -333,6 +333,16 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
       ) !important;
     }
 
+    /* The content (.tab-content, a sibling in .tab-stack) moves with the background, so the
+       favicon stays 8px inside it as in ungrouped tabs; it already sits
+       --tab-margin-inline-inner in, like any tab's background */
+    & > .tabbrowser-tab .tab-content {
+      margin-inline-start: calc(
+        var(--custom-group-line-start) + var(--tab-group-line-thickness) + 4px -
+          var(--tab-margin-inline-inner)
+      ) !important;
+    }
+
     /* A split view in a group: its inner backgrounds start where grouped tabs' do */
     & > tab-split-view-wrapper {
       margin-inline-start: calc(
