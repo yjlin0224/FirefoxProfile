@@ -29,6 +29,7 @@ user_pref("browser.toolbars.bookmarks.visibility", "never"); // userChrome.css: 
 user_pref("browser.uidensity", 0); // default, pinned: userChrome.css's 32px grid is for normal density
 user_pref("browser.urlbar.keepPanelOpenDuringImeComposition", true); // keep the urlbar results open while composing with an IME
 user_pref("browser.urlbar.showSearchSuggestionsFirst", false);
+user_pref("browser.urlbar.showSearchTerms.enabled", false); // the urlbar shows a results page's address, not the search terms (settings: Search, "Show search terms in the address bar on results pages")
 user_pref("browser.urlbar.trimURLs", false);
 user_pref("browser.vpn_promo.enabled", false);
 user_pref("datareporting.healthreport.uploadEnabled", false); // shared by the profile group (permanentSharedPrefs): the group's database overrides this at startup; set it in Settings
