@@ -397,8 +397,12 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
    ::part(items-wrapper), which ::part() from userChrome.css can't reach; user rules do apply
    inside shadow DOM though, and container queries see through it, so a named container on
    the pinned area scopes the rule to its slot alone (not the tab list's). >= 100px = expanded.
+   The container only exists while the tab list is [expanded]: collapsing drops that at once
+   but holds the sidebar at its expanded width while it slides shut (browser-sidebar.js,
+   _animateSidebarContainer()), so the width alone kept the grid on and the collapsed pinned
+   tabs 4px off for the whole animation.
    FRAGILE: relies on the arrowscrollbox's shadow markup (slot part="items-wrapper"). */
-#pinned-tabs-container[orient='vertical'] {
+#tabbrowser-tabs[orient='vertical'][expanded] > #pinned-tabs-container {
   container: custom-pinned-tabs / inline-size;
 }
 
