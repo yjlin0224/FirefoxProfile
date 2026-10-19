@@ -60,7 +60,8 @@ Firefox Developer Edition customization: `profile/chrome/userChrome.css`,
 - Don't change preferences, profiles.ini or prefs.js without asking. Edit profiles.ini and
   prefs.js only while Firefox is fully closed (check that no firefox.exe is left).
 - `devtools.debugger.prompt-connection` is off for this workflow; remind the user to turn it
-  back on when a session is over.
+  back on when a session is over. user.js pins it to true, so a restart turns it back on (and
+  the user has to turn it off again after a restart mid-session).
 
 ## CSS conventions
 

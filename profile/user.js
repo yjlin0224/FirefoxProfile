@@ -39,6 +39,7 @@ user_pref("devtools.command-button-measure.enabled", true);
 user_pref("devtools.command-button-rulers.enabled", true);
 user_pref("devtools.command-button-screenshot.enabled", true);
 user_pref("devtools.chrome.enabled", true); // Browser Toolbox, used by scripts/
+user_pref("devtools.debugger.prompt-connection", true); // default, pinned: scripts/ need it off, set by hand for a session; a restart turns it back on if that's forgotten
 user_pref("devtools.debugger.remote-enabled", true); // Browser Toolbox, used by scripts/
 user_pref("devtools.dom.enabled", true);
 user_pref("devtools.screenshot.audio.enabled", false);

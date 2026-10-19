@@ -68,5 +68,5 @@ Firefox 更新到新的主要版本後：
 
 ## 安全提醒
 
-- 即時重新載入需要 `devtools.debugger.prompt-connection = false`，否則每次連線都要在 Firefox 裡按允許。關掉它時，任何本機程式都能在 Browser Toolbox 開著時控制瀏覽器：用完請改回 `true` 並關閉 Browser Toolbox。
+- 即時重新載入需要 `devtools.debugger.prompt-connection = false`，否則每次連線都要在 Firefox 裡按允許。關掉它時，任何本機程式都能在 Browser Toolbox 開著時控制瀏覽器：用完請改回 `true` 並關閉 Browser Toolbox。`user.js` 把它固定為 `true`，忘了改回來的話，重新啟動 Firefox 也會恢復；反過來說，工作途中重新啟動後要再關一次。
 - Firefox 更新後如果版面跑掉，先看兩個 CSS 檔開頭的說明，用 `scripts/` 的量測工具對照設計規格。
