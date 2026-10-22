@@ -859,6 +859,72 @@ panel[type="arrow"] {
   transition-property: transform !important;
 }
 
+/* Library Window: over Mica, Like the Browser Window */
+/* The Library (history, bookmarks, downloads) only gets a backdrop from Windows with the
+   windowsmica attribute on its root, as the browser window has (AppWindow.cpp reads it when the
+   window opens, ChromeObserver.cpp when it changes). CSS can't add an attribute, so everything
+   here waits for it: without one the window keeps Firefox's look, where anything transparent
+   would show black or whatever is behind the window (measured). Nothing adds it yet: see
+   README.md, 待辦. With it: the window, its toolbar and the folder list (left) show the Mica;
+   the main area (right: the history / bookmarks list or the downloads list, and the details
+   pane under them) is one block tinted like the sidebar panel, its top left corner rounded,
+   everything inside it transparent. No separators but the one above the details pane.
+   Firefox: places/organizer.css (--organizer-* colors, #placesToolbar border-bottom,
+   #placesView > splitter border-inline-end, #downloadsListBox border), tree.css (treecol
+   background, the focus ring) */
+@-moz-document url("chrome://browser/content/places/places.xhtml") {
+  #places[windowsmica] {
+    &,
+    & #placesToolbar,
+    & #placesList {
+      background-color: transparent !important;
+    }
+
+    & #contentView {
+      background-color: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
+      border-start-start-radius: var(--border-radius-small) !important;
+    }
+
+    /* The folder list's rows: hovered like an unselected pinned tab (its text color at 7%),
+       selected like a selected pinned tab (white at 20%, at 60% on a light scheme), the text
+       left as it is.
+       FRAGILE: copies of the unselected pinned tab's color-mix() (tabbrowser/tabs.css) and of
+       --tab-background-color-selected, which only the browser window has */
+    & #placesList {
+      --organizer-hover-background: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
+      --organizer-selected-background: light-dark(oklch(1 0 0 / 60%), oklch(1 0 0 / 20%)) !important;
+      --organizer-focus-selected-background: light-dark(oklch(1 0 0 / 60%), oklch(1 0 0 / 20%)) !important;
+      --organizer-selected-color: currentColor !important;
+      --organizer-focus-selected-color: currentColor !important;
+    }
+
+    /* No dotted focus ring round its current row: the selected one already stands out.
+       Firefox: tree.css (`treechildren::-moz-tree-row(current, focus) { outline:
+       var(--default-focusring) }`) */
+    & #placesList treechildren::-moz-tree-row(current, focus) {
+      outline: none !important;
+    }
+
+    & :is(#placeContent, #placeContent treecol, #downloadsListBox, #detailsPane) {
+      background-color: transparent !important;
+    }
+
+    /* No separators under the toolbar, between the lists (the splitter keeps its 3px to drag)
+       and round the downloads list */
+    & #placesToolbar {
+      border-bottom: none !important;
+    }
+
+    & #placesView > splitter {
+      border-inline: none !important;
+    }
+
+    & #downloadsListBox {
+      border: none !important;
+    }
+  }
+}
+
 /* Tab dialogs: 4px below the page's top edge, like the confirmation hint (Firefox pulls them
    5px up, over the toolbar's edge), still centered; their 12px corners (--border-radius-medium)
    are already concentric with the page's.

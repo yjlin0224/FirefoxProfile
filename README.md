@@ -72,3 +72,7 @@ Firefox 更新到新的主要版本後：
 
 - 即時重新載入需要 `devtools.debugger.prompt-connection = false`，否則每次連線都要在 Firefox 裡按允許。關掉它時，任何本機程式都能在 Browser Toolbox 開著時控制瀏覽器：用完請改回 `true` 並關閉 Browser Toolbox。`user.js` 把它固定為 `true`，忘了改回來的話，重新啟動 Firefox 也會恢復；反過來說，工作途中重新啟動後要再關一次。
 - Firefox 更新後如果版面跑掉，先看兩個 CSS 檔開頭的說明，用 `scripts/` 的量測工具對照設計規格。
+
+## 待辦
+
+- **歷史視窗（Library）的 Mica**：`userChrome.css` 已經寫好歷史視窗的半透明樣式（「Library Window: over Mica」那一段），但只在視窗根元素有 `windowsmica` 屬性時生效。Firefox 只替主視窗加這個屬性，CSS 又加不了屬性，所以目前這段規則平常不會套用，歷史視窗維持 Firefox 原本的樣子。要讓它自動生效，得在歷史視窗開啟時用腳本加上 `windowsmica`：例如 autoconfig，在 Firefox 安裝資料夾放 `defaults/pref/` 的設定和一個 `.cfg` 腳本。這需要修改這個 repo 目前管不到的安裝資料夾、另外的部署方式，而且腳本以最高權限執行、Firefox 升版後要確認仍有效，所以先不做。不加屬性就讓規則直接套用也不行：沒有 Mica 時，透明的地方會變成純黑或透出視窗後面雜亂的畫面（實測過）。
