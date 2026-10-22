@@ -19,7 +19,12 @@
  *     4px gap, right and bottom; 0 at the top and on the sidebar side; the focused page
  *     glows in var(--focus-outline-color).
  *   - Native theme on, yet the selected tab keeps nova's 1px violet-to-orange gradient border
- *     (--tab-border-color-accent), as it has with the native theme off.
+ *     (--tab-border-color-accent), as it has with the native theme off, and so does the open
+ *     Firefox View button (selected-tab-border.css). It turns: the gradient runs evenly along
+ *     the ring (each frame within 2px of an even run), its pure violet stretch passing any
+ *     point in the same time on a pinned tab's circle and on a long tab (within 1ms measured;
+ *     --custom-ring-violet-time); still with reduced motion. At rest it matches Firefox's
+ *     gradient: every ring pixel within 4 (of 255, RGB distance).
  *   - Identical in every UI density, both sidebar modes, private windows, windowed or maximized.
  *
  * WHEN A FIREFOX UPDATE BREAKS SOMETHING
@@ -50,6 +55,11 @@
 @import url(UserChromes/iconized_places_context_menu.css);
 @import url(UserChromes/iconized_tabs_context_menu.css);
 @import url(UserChromes/iconized_textbox_context_menu.css);
+
+/* The selected tab's gradient border, which turns: its own file, as it's long and copies
+   Firefox's gradient (FRAGILE there). Imported here, so it applies before every rule below;
+   none of them sets the same properties on the same elements. */
+@import url(selected-tab-border.css);
 
 /* Extend UserChromes/cleaner_extensions_menu.css */
 /* 32px icons + 8px button padding + 4px item margin = 56px grid cells, 8px apart. The item
@@ -782,73 +792,4 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
    Firefox: tabbrowser/content-area.css (`.dialogOverlay > .dialogBox { margin-top: -5px }`). */
 :not(.content-prompt-dialog) > .dialogOverlay > .dialogBox:not(.spotlightBox) {
   margin-top: 4px !important;
-}
-
-/* ==== Nova Without the Native Theme, Kept with It ==== */
-/* browser.theme.native-theme only decides whether (-moz-native-theme) matches (Servo's
-   media_features.rs); with it on, nova leaves out the parts of its own look that Firefox wraps
-   in `not (-moz-native-theme)`. The ones wanted back are copied here, in Firefox's own
-   conditions apart from that one. Everything sits inside (-moz-native-theme), so with the pref
-   off Firefox's rules draw them again and these stay out of the way.
-   FRAGILE: copies of Firefox 159's rules; after an update, compare each with the rule named in
-   its Firefox: note (search the files for -moz-native-theme for new candidates). */
-
-@media (-moz-native-theme) and -moz-pref('browser.nova.enabled') and (not (prefers-contrast)) {
-  /* The selected tab's 1px gradient border (violet to orange, --tab-border-color-accent), over
-     the transparent 1px border nova gives every tab background. Firefox paints the gradient
-     there with `background-clip: border-area`, which only its own chrome:// sheets may use
-     (layout.css.background-clip.border-area.enabled is false; here the whole background
-     declaration would drop, selected color included). So a ::before covers the border box
-     instead (the ring, below), with the background's corners (border-radius: inherit).
-     It's placed by anchoring to the background, not by making the background its containing
-     block: position: relative there would move the group line (.tab-group-line, absolutely
-     positioned inside it against .tab-stack). anchor-scope keeps each tab's anchor its own
-     (a split view has two selected tabs).
-     Firefox: tabbrowser/tabs.css, `.tab-background` `:root[theme-in-app] &:is([selected]:not([multiselected]))` */
-  :root[theme-in-app] .tab-stack {
-    anchor-scope: --custom-tab-background;
-  }
-
-  :root[theme-in-app] .tab-background:is([selected]:not([multiselected])) {
-    anchor-name: --custom-tab-background;
-
-    &::before {
-      position-anchor: --custom-tab-background;
-      border-radius: inherit;
-    }
-  }
-
-  /* Firefox View is a tab too (opening it leaves every other tab unselected), but with vertical
-     tabs its button sits in the nav-bar, where Firefox styles it like any open toolbar button,
-     the same as the sidebar button next to it. Firefox gives the open button the selected tab's
-     look only in the horizontal tab strip (#TabsToolbar), and nova's border only without the
-     native theme; here the nav-bar's gets both, so it reads as the selected tab. Not a copy:
-     an extension of that rule. The icon is an <image>, which can't have a ::before, so the
-     button draws the ring, anchored to the icon (its corners: --toolbarbutton-border-radius).
-     Firefox: tabbrowser/tabs.css, `#TabsToolbar #firefox-view-button[open] > .toolbarbutton-icon` */
-  :root[theme-in-app] #firefox-view-button[open] {
-    & > .toolbarbutton-icon {
-      anchor-name: --custom-firefox-view-icon;
-      background-color: var(--tab-background-color-selected) !important;
-    }
-
-    &::before {
-      position-anchor: --custom-firefox-view-icon;
-      border-radius: var(--toolbarbutton-border-radius);
-    }
-  }
-
-  /* The ring, for both: a ::before over the anchor's border box, its middle masked out
-     (exclude) to leave 1px; the content box's inner radius follows the corners */
-  :root[theme-in-app] :is(.tab-background:is([selected]:not([multiselected])), #firefox-view-button[open])::before {
-    content: '';
-    position: absolute;
-    inset: anchor(top) anchor(right) anchor(bottom) anchor(left);
-    padding: 1px;
-    background: var(--tab-border-color-accent);
-    mask:
-      linear-gradient(#000 0 0) content-box exclude,
-      linear-gradient(#000 0 0);
-    pointer-events: none;
-  }
 }

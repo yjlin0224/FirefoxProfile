@@ -1,0 +1,476 @@
+/*
+ * The selected tab's gradient border, and the open Firefox View button's: part of
+ * userChrome.css, imported at its top. Its TUNED FOR, DESIGN SPEC and how to fix it after a
+ * Firefox update are in userChrome.css's header; the rules' Firefox: notes name the sources.
+ */
+
+/* ==== Nova Without the Native Theme, Kept with It ==== */
+/* browser.theme.native-theme only decides whether (-moz-native-theme) matches (Servo's
+   media_features.rs); with it on, nova leaves out the parts of its own look that Firefox wraps
+   in `not (-moz-native-theme)`. The ones wanted back are copied here, in Firefox's own
+   conditions apart from that one. Everything sits inside (-moz-native-theme), so with the pref
+   off Firefox's rules draw them again and these stay out of the way.
+   FRAGILE: copies of Firefox 159's rules; after an update, compare each with the rule named in
+   its Firefox: note (search the files for -moz-native-theme for new candidates). */
+
+@media (-moz-native-theme) and -moz-pref('browser.nova.enabled') and (not (prefers-contrast)) {
+  /* The selected tab's 1px gradient border (violet to orange, --tab-border-color-accent), over
+     the transparent 1px border nova gives every tab background. Firefox paints the gradient
+     there with `background-clip: border-area`, which only its own chrome:// sheets may use
+     (layout.css.background-clip.border-area.enabled is false; here the whole background
+     declaration would drop, selected color included). So a ::before covers the border box
+     instead (the ring, below), with the background's corners (border-radius: inherit).
+     It's placed by anchoring to the background, not by making the background its containing
+     block: position: relative there would move the group line (.tab-group-line, absolutely
+     positioned inside it against .tab-stack). anchor-scope keeps each tab's anchor its own
+     (a split view has two selected tabs).
+     Firefox: tabbrowser/tabs.css, `.tab-background` `:root[theme-in-app] &:is([selected]:not([multiselected]))` */
+  :root[theme-in-app] .tab-stack {
+    anchor-scope: --custom-tab-background;
+  }
+
+  /* A container, so the ring can measure its width (100cqw: the content box, inside nova's 1px
+     border) for its perimeter; the height is the tab's */
+  :root[theme-in-app] .tab-background:is([selected]:not([multiselected])) {
+    anchor-name: --custom-tab-background;
+    container-type: inline-size;
+
+    &::before {
+      position-anchor: --custom-tab-background;
+      border-radius: inherit;
+      --custom-ring-width: calc(100cqw + 2px);
+      --custom-ring-height: var(--tab-min-height);
+    }
+  }
+
+  /* Firefox View is a tab too (opening it leaves every other tab unselected), but with vertical
+     tabs its button sits in the nav-bar, where Firefox styles it like any open toolbar button,
+     the same as the sidebar button next to it. Firefox gives the open button the selected tab's
+     look only in the horizontal tab strip (#TabsToolbar), and nova's border only without the
+     native theme; here the nav-bar's gets both, so it reads as the selected tab. Not a copy:
+     an extension of that rule. The icon is an <image>, which can't have a ::before, so the
+     button draws the ring, anchored to the icon (its corners: --toolbarbutton-border-radius).
+     Firefox: tabbrowser/tabs.css, `#TabsToolbar #firefox-view-button[open] > .toolbarbutton-icon` */
+  :root[theme-in-app] #firefox-view-button[open] {
+    & > .toolbarbutton-icon {
+      anchor-name: --custom-firefox-view-icon;
+      background-color: var(--tab-background-color-selected) !important;
+    }
+
+    /* A circle: as wide as it's tall (the icon with its padding) */
+    &::before {
+      position-anchor: --custom-firefox-view-icon;
+      border-radius: var(--toolbarbutton-border-radius);
+      --custom-ring-width: var(--toolbarbutton-icon-size);
+      --custom-ring-height: var(--custom-ring-width);
+    }
+  }
+
+  /* The ring, for both: a ::before over the anchor's border box, its middle masked out
+     (exclude) to leave 1px; the content box's inner radius follows the corners.
+     At rest it is Firefox's gradient: linear-gradient(96deg) from violet at 20.68% to orange at
+     79.34% of the gradient line, coloring each point by its projection p on the 96deg axis.
+     It's drawn as a conic gradient, which colors a point by its angle from the middle (each
+     angle meets the ring once): stops of 9 evenly spaced colors along the transition (p0 to
+     p8), each placed where the ring's centerline meets that projection, once on the top side
+     (a0 to a8) and once on the bottom (b8 back to b0); outside them pure violet or orange.
+     Measured against Firefox's gradient: within 3.6 (of 255, RGB distance) on a 248px tab and
+     3 on a circle (a plain two-color conic gradient: 28 and 51).
+     It turns by running the whole gradient along the ring, evenly. How fast: the pure violet
+     stretch takes --custom-ring-violet-time to pass any point of the ring, on a pinned tab's
+     circle as on a long tab, and so does the orange one, as long as the violet. Firefox's
+     gradient spans the box, so a long tab's stretches are longer (violet 117px against 26px on
+     a circle): the same px a second would leave its violet passing 4.5 times as long. So a
+     lap takes perimeter / violet length * that time (3.73 times it on a circle, 4.51 on a
+     248px tab). The transitions differ in proportion (147px on the long tab, 23px on the
+     circle), so they can't match too: 1.26 and 0.88 times it. Measured with 0.13s, the violet
+     passed the middle of the right end in 0.144s on the long tab and 0.143s on the circle.
+     Turning the conic's angle instead of running it wouldn't do: seen from the middle of a long
+     tab, its sides take a narrow angle and its ends a wide one, so the colors crawled along
+     the sides and whipped round the ends (31 to 1195px a second measured). So every stop has
+     a place along the centerline at rest (d, from the top's middle, clockwise), and the lap
+     (0 to 1, animated evenly) moves them all by the same distance (shift = lap * perimeter):
+     each one's angle is that of the point it reaches. The centerline is a stadium: straight
+     sides 2c =
+     width - height long and half circles of radius r = height / 2 - 0.5px at the ends,
+     perimeter 4c + 2 pi r (a circle when c is 0). A distance s splits into five stretches
+     (top right half, right end, bottom, left end, top left half), each clamped to its own
+     length, which add up to the point (x, y) from the middle; its angle is atan2(x, -y). The
+     gradient starts (from) at the point 270deg away at rest (ref: the middle of the left end),
+     so the stops sit at their angles minus its angle. Between stops the colors still blend by
+     angle: modeled, the moving gradient stays within 7.9 of the rest one carried along.
+     At rest (or with reduced motion) shift is 0: the stops are the ones above.
+     FRAGILE: copies the 96deg, 20.68% and 79.34% of Firefox's gradient.
+     Firefox: tabbrowser/tab.tokens.css, --tab-border-color-accent (nova) */
+  :root[theme-in-app] :is(.tab-background:is([selected]:not([multiselected])), #firefox-view-button[open])::before {
+    content: '';
+    position: absolute;
+    inset: anchor(top) anchor(right) anchor(bottom) anchor(left);
+    padding: 1px;
+    background: conic-gradient(
+      from var(--custom-ring-q-ref),
+      var(--tab-border-color-selected-leading) 0deg,
+      var(--tab-border-color-selected-leading) mod(var(--custom-ring-q-a0) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 12.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-a1) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 25%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-a2) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 37.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-a3) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 50%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-a4) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 62.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-a5) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 75%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-a6) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 87.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-a7) - var(--custom-ring-q-ref), 360deg),
+      var(--tab-border-color-selected-trailing) mod(var(--custom-ring-q-a8) - var(--custom-ring-q-ref), 360deg),
+      var(--tab-border-color-selected-trailing) mod(var(--custom-ring-q-b8) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 87.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-b7) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 75%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-b6) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 62.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-b5) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 50%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-b4) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 37.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-b3) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 25%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-b2) - var(--custom-ring-q-ref), 360deg),
+      color-mix(in srgb, var(--tab-border-color-selected-trailing) 12.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-b1) - var(--custom-ring-q-ref), 360deg),
+      var(--tab-border-color-selected-leading) mod(var(--custom-ring-q-b0) - var(--custom-ring-q-ref), 360deg),
+      var(--tab-border-color-selected-leading) 360deg
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+    pointer-events: none;
+    --custom-ring-violet-time: 0.25s;
+    --custom-ring-axis: 96deg;
+    --custom-ring-violet-until: 0.2068;
+    --custom-ring-orange-from: 0.7934;
+    --custom-ring-r: calc(var(--custom-ring-height) / 2 - 0.5px);
+    --custom-ring-c: calc((var(--custom-ring-width) - var(--custom-ring-height)) / 2);
+    --custom-ring-perimeter: calc(4 * var(--custom-ring-c) + 2 * pi * var(--custom-ring-r));
+    /* The gradient line's length: the box's width and height projected on the axis */
+    --custom-ring-length: calc(
+      var(--custom-ring-width) * sin(var(--custom-ring-axis)) +
+        var(--custom-ring-height) * max(cos(var(--custom-ring-axis)), -1 * cos(var(--custom-ring-axis)))
+    );
+    --custom-ring-p0: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 0 / 8 - 0.5) * var(--custom-ring-length));
+    --custom-ring-p1: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 1 / 8 - 0.5) * var(--custom-ring-length));
+    --custom-ring-p2: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 2 / 8 - 0.5) * var(--custom-ring-length));
+    --custom-ring-p3: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 3 / 8 - 0.5) * var(--custom-ring-length));
+    --custom-ring-p4: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 4 / 8 - 0.5) * var(--custom-ring-length));
+    --custom-ring-p5: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 5 / 8 - 0.5) * var(--custom-ring-length));
+    --custom-ring-p6: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 6 / 8 - 0.5) * var(--custom-ring-length));
+    --custom-ring-p7: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 7 / 8 - 0.5) * var(--custom-ring-length));
+    --custom-ring-p8: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 8 / 8 - 0.5) * var(--custom-ring-length));
+    --custom-ring-shift: calc(var(--custom-ring-lap) * var(--custom-ring-perimeter));
+    /* The pure violet stretch: the ring but for a0 round to b0 (transition, orange, transition) */
+    --custom-ring-violet: calc(var(--custom-ring-perimeter) - (var(--custom-ring-d-b0) - var(--custom-ring-d-a0)));
+    --custom-ring-d-ref: calc(3 * var(--custom-ring-c) + 1.5 * pi * var(--custom-ring-r));
+    /* A stadium: the stops' places at rest, on the top side then the bottom side */
+    --custom-ring-d-a0: calc((var(--custom-ring-p0) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-a1: calc((var(--custom-ring-p1) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-a2: calc((var(--custom-ring-p2) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-a3: calc((var(--custom-ring-p3) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-a4: calc((var(--custom-ring-p4) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-a5: calc((var(--custom-ring-p5) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-a6: calc((var(--custom-ring-p6) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-a7: calc((var(--custom-ring-p7) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-a8: calc((var(--custom-ring-p8) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-b0: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p0) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-b1: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p1) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-b2: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p2) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-b3: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p3) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-b4: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p4) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-b5: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p5) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-b6: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p6) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-b7: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p7) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    --custom-ring-d-b8: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p8) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    /* Each point, moved along: where it is (s) and its angle (q) */
+    --custom-ring-s-ref: mod(var(--custom-ring-d-ref) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-ref: atan2(
+      clamp(0px, var(--custom-ring-s-ref), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-ref) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-ref) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-ref) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-ref) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-ref) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-ref) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-a0: mod(var(--custom-ring-d-a0) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-a0: atan2(
+      clamp(0px, var(--custom-ring-s-a0), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a0) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-a0) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a0) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-a0) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-a0) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-a0) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-a1: mod(var(--custom-ring-d-a1) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-a1: atan2(
+      clamp(0px, var(--custom-ring-s-a1), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a1) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-a1) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a1) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-a1) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-a1) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-a1) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-a2: mod(var(--custom-ring-d-a2) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-a2: atan2(
+      clamp(0px, var(--custom-ring-s-a2), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a2) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-a2) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a2) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-a2) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-a2) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-a2) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-a3: mod(var(--custom-ring-d-a3) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-a3: atan2(
+      clamp(0px, var(--custom-ring-s-a3), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a3) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-a3) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a3) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-a3) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-a3) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-a3) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-a4: mod(var(--custom-ring-d-a4) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-a4: atan2(
+      clamp(0px, var(--custom-ring-s-a4), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a4) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-a4) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a4) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-a4) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-a4) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-a4) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-a5: mod(var(--custom-ring-d-a5) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-a5: atan2(
+      clamp(0px, var(--custom-ring-s-a5), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a5) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-a5) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a5) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-a5) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-a5) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-a5) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-a6: mod(var(--custom-ring-d-a6) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-a6: atan2(
+      clamp(0px, var(--custom-ring-s-a6), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a6) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-a6) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a6) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-a6) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-a6) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-a6) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-a7: mod(var(--custom-ring-d-a7) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-a7: atan2(
+      clamp(0px, var(--custom-ring-s-a7), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a7) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-a7) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a7) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-a7) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-a7) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-a7) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-a8: mod(var(--custom-ring-d-a8) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-a8: atan2(
+      clamp(0px, var(--custom-ring-s-a8), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a8) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-a8) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-a8) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-a8) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-a8) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-a8) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-b8: mod(var(--custom-ring-d-b8) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-b8: atan2(
+      clamp(0px, var(--custom-ring-s-b8), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b8) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-b8) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b8) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-b8) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b8) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b8) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-b7: mod(var(--custom-ring-d-b7) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-b7: atan2(
+      clamp(0px, var(--custom-ring-s-b7), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b7) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-b7) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b7) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-b7) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b7) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b7) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-b6: mod(var(--custom-ring-d-b6) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-b6: atan2(
+      clamp(0px, var(--custom-ring-s-b6), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b6) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-b6) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b6) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-b6) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b6) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b6) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-b5: mod(var(--custom-ring-d-b5) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-b5: atan2(
+      clamp(0px, var(--custom-ring-s-b5), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b5) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-b5) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b5) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-b5) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b5) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b5) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-b4: mod(var(--custom-ring-d-b4) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-b4: atan2(
+      clamp(0px, var(--custom-ring-s-b4), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b4) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-b4) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b4) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-b4) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b4) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b4) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-b3: mod(var(--custom-ring-d-b3) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-b3: atan2(
+      clamp(0px, var(--custom-ring-s-b3), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b3) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-b3) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b3) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-b3) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b3) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b3) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-b2: mod(var(--custom-ring-d-b2) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-b2: atan2(
+      clamp(0px, var(--custom-ring-s-b2), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b2) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-b2) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b2) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-b2) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b2) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b2) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-b1: mod(var(--custom-ring-d-b1) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-b1: atan2(
+      clamp(0px, var(--custom-ring-s-b1), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b1) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-b1) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b1) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-b1) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b1) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b1) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+    --custom-ring-s-b0: mod(var(--custom-ring-d-b0) + var(--custom-ring-shift), var(--custom-ring-perimeter));
+    --custom-ring-q-b0: atan2(
+      clamp(0px, var(--custom-ring-s-b0), var(--custom-ring-c))
+        + var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b0) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        - clamp(0px, var(--custom-ring-s-b0) - var(--custom-ring-c) - pi * var(--custom-ring-r), 2 * var(--custom-ring-c))
+        - var(--custom-ring-r) * sin(clamp(0px, var(--custom-ring-s-b0) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r))
+        + clamp(0px, var(--custom-ring-s-b0) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
+      -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b0) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b0) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
+    );
+
+    @media (prefers-reduced-motion: no-preference) {
+      animation: custom-ring-turn linear infinite;
+      animation-duration: calc(var(--custom-ring-perimeter) / var(--custom-ring-violet) * var(--custom-ring-violet-time));
+    }
+  }
+
+  /* A circle: pinned tabs, every tab in the collapsed sidebar, Firefox View. The stops' places
+     at rest: r times their angle, 96deg -/+ acos(p / r) */
+  :root[theme-in-app] :is(#tabbrowser-tabs:not([expanded]), .tabbrowser-tab[pinned]) .tab-background:is([selected]:not([multiselected]))::before,
+  :root[theme-in-app] #firefox-view-button[open]::before {
+    --custom-ring-d-a0: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p0) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-a1: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p1) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-a2: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p2) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-a3: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p3) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-a4: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p4) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-a5: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p5) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-a6: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p6) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-a7: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p7) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-a8: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p8) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-b0: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p0) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-b1: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p1) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-b2: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p2) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-b3: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p3) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-b4: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p4) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-b5: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p5) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-b6: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p6) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-b7: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p7) / var(--custom-ring-r))) / 1rad);
+    --custom-ring-d-b8: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p8) / var(--custom-ring-r))) / 1rad);
+  }
+}
+
+/* The ring's intermediate values, registered: each then computes to one length or angle
+   (15.5px, 96.09deg...) instead of the text of every var() it uses, spelled out again in each
+   one that uses it (125,000 characters for one ring, parsed every frame: 9 rings ran at 9.5
+   frames a second). Not inherited: they're the ring's own. */
+@property --custom-ring-r { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-c { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-perimeter { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-length { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-p0 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-p1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-p2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-p3 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-p4 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-p5 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-p6 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-p7 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-p8 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-shift { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-ref { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-a0 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-a1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-a2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-a3 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-a4 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-a5 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-a6 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-a7 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-a8 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-b0 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-b1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-b2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-b3 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-b4 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-b5 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-b6 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-b7 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-d-b8 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-ref { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-a0 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-a1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-a2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-a3 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-a4 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-a5 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-a6 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-a7 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-a8 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-b0 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-b1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-b2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-b3 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-b4 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-b5 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-b6 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-b7 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-s-b8 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --custom-ring-q-ref { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-a0 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-a1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-a2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-a3 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-a4 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-a5 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-a6 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-a7 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-a8 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-b0 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-b1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-b2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-b3 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-b4 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-b5 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-b6 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-b7 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --custom-ring-q-b8 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+/* end of the registered intermediate values */
+
+/* The ring's lap, 0 to 1: registered so it animates (and can't be inside @media) */
+@property --custom-ring-lap {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@keyframes custom-ring-turn {
+  from {
+    --custom-ring-lap: 0;
+  }
+  to {
+    --custom-ring-lap: 1;
+  }
+}

@@ -1,7 +1,8 @@
 # CLAUDE.md
 
-Firefox Developer Edition customization: `profile/chrome/userChrome.css`,
-`profile/chrome/userContent.css`, `profile/user.js`. Read `README.md` and `scripts/README.md` first. Reply to the user in 繁體中文.
+Firefox Developer Edition customization: `profile/chrome/userChrome.css` (with
+`selected-tab-border.css`, imported at its top), `profile/chrome/userContent.css`,
+`profile/user.js`. Read `README.md` and `scripts/README.md` first. Reply to the user in 繁體中文.
 
 ## Workflow
 

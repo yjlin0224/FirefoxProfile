@@ -11,6 +11,7 @@ Firefox Developer Edition 的介面自訂：`userChrome.css`（瀏覽器介面�
 | 路徑 | 內容 |
 | --- | --- |
 | `profile/chrome/userChrome.css` | 瀏覽器介面。開頭有適用環境、設計規格和「Firefox 更新後壞掉時怎麼修」 |
+| `profile/chrome/selected-tab-border.css` | 選取中分頁（和打開的 Firefox View 按鈕）會旋轉的漸層框線，由 `userChrome.css` 開頭 `@import`；適用環境和設計規格寫在 `userChrome.css` 開頭 |
 | `profile/chrome/userContent.css` | 網頁內容：新分頁（nova）、about: 頁面字型、about:config、DevTools、檢視原始碼。開頭同樣有規格和修理說明 |
 | `profile/chrome/UserChromes/` | 第三方樣式（由 `userChrome.css` `@import`），來源網址與目前版本對應的上游 commit 列在 `scripts/mods.json` |
 | `profile/user.js` | 每次啟動都會套用的偏好設定 |
