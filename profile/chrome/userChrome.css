@@ -27,6 +27,9 @@
  *     gradient: every ring pixel within 4 (of 255, RGB distance).
  *   - Sidebar panel: no border, its text color at 7% over the window's Mica (as an unselected
  *     pinned tab), nothing inside it painting over that (extensions' and the AI chatbot's bars).
+ *   - Menus and panels (bookmarks menu, downloads, history, app menu...): the system's acrylic
+ *     under the Menu color, as context menus; no fade-in. The app menu's left edge stays where
+ *     it was with Firefox's own panels.
  *   - Identical in every UI density, both sidebar modes, private windows, windowed or maximized.
  *
  * WHEN A FIREFOX UPDATE BREAKS SOMETHING
@@ -165,12 +168,13 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
 
 /* The app menu opens "bottomright topright" from the menu icon, as if the button were still
    on the right. Pull it right so the panel's left edge lines up with the icon's instead:
-   icon width − panel width (25em view + 2 * 1px border) − 4px shadow margin.
+   icon width − panel width (25em view + 2 * 1px border) − shadow margin (4px; 0 where the
+   panel takes the system's backdrop and Windows draws the shadow).
    FRAGILE: 25em is Firefox's `#appMenu-popup panelview { width }` (panelUI-shared.css);
-   1px / 4px are the panel's border and shadow margin (popup.css) */
+   1px is the panel's border (popup.css) */
 #appMenu-popup {
   margin-inline-end: calc(
-    16px + 2 * var(--toolbarbutton-padding-inner) - (25em + 2 * 1px) - 4px
+    16px + 2 * var(--toolbarbutton-padding-inner) - (25em + 2 * 1px) - var(--panel-box-shadow-margin)
   ) !important;
 }
 
@@ -827,6 +831,32 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
   #footer {
     border-top: none !important;
   }
+}
+
+/* Menus and Panels: the System's Acrylic, as Context Menus Have */
+/* The bookmarks menu and the arrow panels (downloads, history, the app menu...) get the
+   acrylic Windows draws behind context menus. Firefox asks Windows for a popup's backdrop
+   (acrylic) only when its appearance is menupopup; nova draws these itself instead (24px
+   corners, a 4px shadow margin, an opaque background). Like context menus, they then leave
+   the shadow, border and corners to Windows, and take the system's Menu color over it (black
+   at 60% on a dark scheme), as context menus do.
+   Firefox: menu.css (`menupopup { @media (-moz-windows-mica-popups) { appearance: auto;
+   -moz-default-appearance: menupopup; ... } }`), popup.css (`--panel-background-color: Menu`),
+   layout/xul/nsMenuPopupFrame.cpp (SetMicaBackdrop when the appearance is menupopup) */
+#BMB_bookmarksPopup,
+panel[type="arrow"] {
+  appearance: auto !important;
+  -moz-default-appearance: menupopup !important;
+  --panel-border-color: transparent !important;
+  --panel-box-shadow-margin: 0px !important;
+  --panel-border-radius: 0px !important;
+  --panel-background-color: Menu !important;
+  /* No fade-in: the opacity applies to what Firefox paints (the Menu color), not to the
+     acrylic, so they opened lighter and darkened over 0.18s. The slide moves the whole
+     window, acrylic and all: kept.
+     Firefox: popup.css (`.animatable-menupopup, panel[type="arrow"]`: transform, opacity) */
+  opacity: 1 !important;
+  transition-property: transform !important;
 }
 
 /* Tab dialogs: 4px below the page's top edge, like the confirmation hint (Firefox pulls them
