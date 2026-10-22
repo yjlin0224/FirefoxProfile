@@ -27,6 +27,7 @@
  *     gradient: every ring pixel within 4 (of 255, RGB distance).
  *   - Sidebar panel: no border, its text color at 7% over the window's Mica (as an unselected
  *     pinned tab), nothing inside it painting over that (extensions' and the AI chatbot's bars).
+ *     The find bar the same, while it shows and until it has slid away.
  *   - Menus and panels (bookmarks menu, downloads, history, app menu...): the system's acrylic
  *     under the Menu color, as context menus; no fade-in. The app menu's left edge stays where
  *     it was with Firefox's own panels.
@@ -741,6 +742,36 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
 
 :root:not([inDOMFullscreen]) #tabbrowser-tabpanels > :not(.split-view-panel) .browserContainer {
   box-shadow: var(--custom-content-glow) !important;
+}
+
+/* Find Bar: Translucent over the Window's Mica, Like the Sidebar Panel */
+/* The find bar is already translucent (--toolbar-background-color), but its container paints
+   the page area's color behind it. While the find bar shows, the container takes the sidebar
+   panel's tint instead (its text color at 7%) and the find bar none, so the bar shows the
+   Mica. Behind the page the container only shows before the page has painted.
+   The find bar gets [hidden] as it starts to close, then slides away over 150ms (none with
+   reduced motion): the container keeps the tint until then (measured: switched back at
+   ~200ms), or the transparent bar would show the page area's color while sliding. Opening
+   switches at once.
+   FRAGILE: 150ms is Firefox's find bar transition.
+   Firefox: findbar.css (`background-color: var(--toolbar-background-color)`,
+   `transition-duration: 150ms`, [hidden] `transition-delay: 0s, 150ms`), browser-shared.css
+   (`.browserContainer > findbar`), tabbrowser/content-area.css (.browserContainer) */
+.browserContainer {
+  transition: background-color 0s 150ms;
+
+  @media (prefers-reduced-motion) {
+    transition-delay: 0s;
+  }
+}
+
+.browserContainer:has(> findbar:not([hidden])) {
+  background-color: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
+  transition-delay: 0s;
+}
+
+.browserContainer > findbar {
+  background-color: transparent !important;
 }
 
 /* Page Corners: 16px, the Radius of the 32px Round Buttons Next to Them */
