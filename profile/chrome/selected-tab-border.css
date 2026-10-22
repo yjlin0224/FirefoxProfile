@@ -2,6 +2,8 @@
  * The selected tab's gradient border, and the open Firefox View button's: part of
  * userChrome.css, imported at its top. Its TUNED FOR, DESIGN SPEC and how to fix it after a
  * Firefox update are in userChrome.css's header; the rules' Firefox: notes name the sources.
+ * The parts between `generated:` and `end generated:` comments repeat one formula per color
+ * stop: they're written by scripts/ring-generate.mjs (task ring:generate); change them there.
  */
 
 /* ==== Nova Without the Native Theme, Kept with It ==== */
@@ -109,6 +111,7 @@
     padding: 1px;
     background: conic-gradient(
       from var(--custom-ring-q-ref),
+      /* generated: stops (task ring:generate) */
       var(--tab-border-color-selected-leading) 0deg,
       var(--tab-border-color-selected-leading) mod(var(--custom-ring-q-a0) - var(--custom-ring-q-ref), 360deg),
       color-mix(in srgb, var(--tab-border-color-selected-trailing) 12.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-a1) - var(--custom-ring-q-ref), 360deg),
@@ -129,6 +132,7 @@
       color-mix(in srgb, var(--tab-border-color-selected-trailing) 12.5%, var(--tab-border-color-selected-leading)) mod(var(--custom-ring-q-b1) - var(--custom-ring-q-ref), 360deg),
       var(--tab-border-color-selected-leading) mod(var(--custom-ring-q-b0) - var(--custom-ring-q-ref), 360deg),
       var(--tab-border-color-selected-leading) 360deg
+      /* end generated: stops */
     );
     mask:
       linear-gradient(#000 0 0) content-box exclude,
@@ -146,6 +150,7 @@
       var(--custom-ring-width) * sin(var(--custom-ring-axis)) +
         var(--custom-ring-height) * max(cos(var(--custom-ring-axis)), -1 * cos(var(--custom-ring-axis)))
     );
+    /* generated: projections (task ring:generate) */
     --custom-ring-p0: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 0 / 8 - 0.5) * var(--custom-ring-length));
     --custom-ring-p1: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 1 / 8 - 0.5) * var(--custom-ring-length));
     --custom-ring-p2: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 2 / 8 - 0.5) * var(--custom-ring-length));
@@ -155,11 +160,13 @@
     --custom-ring-p6: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 6 / 8 - 0.5) * var(--custom-ring-length));
     --custom-ring-p7: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 7 / 8 - 0.5) * var(--custom-ring-length));
     --custom-ring-p8: calc((var(--custom-ring-violet-until) + (var(--custom-ring-orange-from) - var(--custom-ring-violet-until)) * 8 / 8 - 0.5) * var(--custom-ring-length));
+    /* end generated: projections */
     --custom-ring-shift: calc(var(--custom-ring-lap) * var(--custom-ring-perimeter));
     /* The pure violet stretch: the ring but for a0 round to b0 (transition, orange, transition) */
     --custom-ring-violet: calc(var(--custom-ring-perimeter) - (var(--custom-ring-d-b0) - var(--custom-ring-d-a0)));
     --custom-ring-d-ref: calc(3 * var(--custom-ring-c) + 1.5 * pi * var(--custom-ring-r));
     /* A stadium: the stops' places at rest, on the top side then the bottom side */
+    /* generated: stadium-places (task ring:generate) */
     --custom-ring-d-a0: calc((var(--custom-ring-p0) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
     --custom-ring-d-a1: calc((var(--custom-ring-p1) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
     --custom-ring-d-a2: calc((var(--custom-ring-p2) - var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
@@ -178,7 +185,9 @@
     --custom-ring-d-b6: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p6) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
     --custom-ring-d-b7: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p7) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
     --custom-ring-d-b8: calc(2 * var(--custom-ring-c) + pi * var(--custom-ring-r) - (var(--custom-ring-p8) + var(--custom-ring-r) * cos(var(--custom-ring-axis))) / sin(var(--custom-ring-axis)));
+    /* end generated: stadium-places */
     /* Each point, moved along: where it is (s) and its angle (q) */
+    /* generated: points (task ring:generate) */
     --custom-ring-s-ref: mod(var(--custom-ring-d-ref) + var(--custom-ring-shift), var(--custom-ring-perimeter));
     --custom-ring-q-ref: atan2(
       clamp(0px, var(--custom-ring-s-ref), var(--custom-ring-c))
@@ -350,6 +359,7 @@
         + clamp(0px, var(--custom-ring-s-b0) - 3 * var(--custom-ring-c) - 2 * pi * var(--custom-ring-r), var(--custom-ring-c)),
       -1 * var(--custom-ring-r) * (cos(clamp(0px, var(--custom-ring-s-b0) - 3 * var(--custom-ring-c) - pi * var(--custom-ring-r), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - cos(clamp(0px, var(--custom-ring-s-b0) - var(--custom-ring-c), pi * var(--custom-ring-r)) / var(--custom-ring-r)) - 1)
     );
+    /* end generated: points */
 
     @media (prefers-reduced-motion: no-preference) {
       animation: custom-ring-turn linear infinite;
@@ -361,6 +371,7 @@
      at rest: r times their angle, 96deg -/+ acos(p / r) */
   :root[theme-in-app] :is(#tabbrowser-tabs:not([expanded]), .tabbrowser-tab[pinned]) .tab-background:is([selected]:not([multiselected]))::before,
   :root[theme-in-app] #firefox-view-button[open]::before {
+    /* generated: circle-places (task ring:generate) */
     --custom-ring-d-a0: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p0) / var(--custom-ring-r))) / 1rad);
     --custom-ring-d-a1: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p1) / var(--custom-ring-r))) / 1rad);
     --custom-ring-d-a2: calc(var(--custom-ring-r) * (var(--custom-ring-axis) - acos(var(--custom-ring-p2) / var(--custom-ring-r))) / 1rad);
@@ -379,6 +390,7 @@
     --custom-ring-d-b6: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p6) / var(--custom-ring-r))) / 1rad);
     --custom-ring-d-b7: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p7) / var(--custom-ring-r))) / 1rad);
     --custom-ring-d-b8: calc(var(--custom-ring-r) * (var(--custom-ring-axis) + acos(var(--custom-ring-p8) / var(--custom-ring-r))) / 1rad);
+    /* end generated: circle-places */
   }
 }
 
@@ -386,6 +398,7 @@
    (15.5px, 96.09deg...) instead of the text of every var() it uses, spelled out again in each
    one that uses it (125,000 characters for one ring, parsed every frame: 9 rings ran at 9.5
    frames a second). Not inherited: they're the ring's own. */
+/* generated: registrations (task ring:generate) */
 @property --custom-ring-r { syntax: '<length>'; inherits: false; initial-value: 0px; }
 @property --custom-ring-c { syntax: '<length>'; inherits: false; initial-value: 0px; }
 @property --custom-ring-perimeter { syntax: '<length>'; inherits: false; initial-value: 0px; }
@@ -457,7 +470,7 @@
 @property --custom-ring-q-b6 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 @property --custom-ring-q-b7 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 @property --custom-ring-q-b8 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-/* end of the registered intermediate values */
+/* end generated: registrations */
 
 /* The ring's lap, 0 to 1: registered so it animates (and can't be inside @media) */
 @property --custom-ring-lap {

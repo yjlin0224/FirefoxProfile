@@ -9,6 +9,7 @@ commands below are what the tasks run.
 | --- | --- |
 | `deploy.mjs`, `watch.mjs`, `diff.mjs`, `reload.mjs` | Deploy the repo's `profile/` to the profile in `.env` and live-reload it |
 | `rdp-eval.mjs`, `find-port.mjs` | Run JavaScript in the profile's Firefox; find its Browser Toolbox port |
+| `ring-generate.mjs` | Write the generated regions of `profile/chrome/selected-tab-border.css` (between `/* generated: … */` and `/* end generated: … */`): the turning border's conic stops, their places on a stadium and a circle, each point run along the ring, and their `@property` registrations. Everything else there is by hand |
 | `mods-check.mjs`, `mods-update.mjs`, `mods.json` | The vendored third-party mods in `profile/chrome/UserChromes/`: `mods.json` gives each one's upstream file and the commit its copy comes from; `mods-check` lists the upstream commits since and flags copies edited here (read-only), `mods-update` downloads the latest version and records its commit. Both use GitHub's API: `GITHUB_TOKEN`, or else the GitHub CLI's token, lifts the 60-requests-an-hour limit |
 | `wallpaper-open.mjs` | Open a saved wallpaper by number (or all of them in a folder): copies it to `out/wallpapers/` with the extension its bytes call for, since the library's files have none |
 | `wallpaper-position.mjs` | List the new tab's saved wallpapers, or set one's position by renaming its file (Firefox closed): Firefox sets the position pref from the file name whenever a wallpaper is applied and at every startup |

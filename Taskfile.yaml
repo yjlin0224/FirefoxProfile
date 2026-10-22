@@ -122,3 +122,10 @@ tasks:
       profile/chrome/UserChromes/ and record it; mods edited here are skipped unless -- --force
     cmds:
       - node scripts/mods-update.mjs {{.CLI_ARGS}}
+
+  ring:generate:
+    desc:
+      Write the generated parts of profile/chrome/selected-tab-border.css (the turning border's
+      color stops and their math), e.g. task ring:generate -- 9 (colors in the transition)
+    cmds:
+      - node scripts/ring-generate.mjs {{.CLI_ARGS}}

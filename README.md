@@ -60,6 +60,7 @@ Firefox 更新到新的主要版本後：
 | `task wallpaper:position -- <位置> [編號]` | 設定桌布的位置（`left`、`topright` 等 9 種），不寫編號就是套用中那張。位置存在桌布檔名裡，Firefox 套用桌布和每次啟動時會依檔名重設 about:config 的值，所以要改檔名；需先關閉 Firefox |
 | `task prefs:dump` | 解析 about:preferences（在背景開一個暫時分頁，用完關掉），依側邊欄的頁面、標題、項目列出對應的 pref，按鈕開啟的對話框中有 pref 的部分（字型、色彩、Proxy、清除資料、同步項目、網站權限預設值）也列在按鈕底下：對話框在暫時分頁裡開啟、讀完直接取消，不會儲存任何東西。寫成 `reference/` 的兩個檔案：預設值和目前的值，兩份行數相同可以直接 diff。目前的值會標出已修改、`user.js` 有設定、鎖定。Firefox 更新後重跑，`git diff reference/` 就能看出設定頁面改了什麼 |
 | `task mods:check` | 檢查第三方樣式有沒有更新，不修改任何檔案：列出上游在目前版本之後改到該檔案的 commit（日期與說明），並標出在這裡被手動改過的檔案。透過 GitHub API 查詢，未登入時每小時限 60 次，可在 `.env` 設定 `GITHUB_TOKEN`，或先用 `gh auth login` 登入 GitHub CLI |
+| `task ring:generate -- [顏色數]` | 重新產生 `selected-tab-border.css` 中標記為 generated 的部分：選取中分頁旋轉框線的漸層色標，和讓它們沿框線移動的公式（每個色標一組，所以用產生的）。顏色數是混色區的顏色數，預設 9；只有想改這個數量，或改了產生器時才需要 |
 | `task mods:update` | 把第三方樣式下載為上游最新的版本，並把對應的 commit 記錄到 `scripts/mods.json`；在這裡被手動改過的檔案會略過，加 `-- --force` 才覆寫。用 `git diff` 檢查後再部署 |
 | `task fmt` / `task fmt:check` | 用 Prettier（版本固定在 Taskfile，設定在 `.prettierrc.yaml`）格式化或檢查腳本、JSON、YAML；CSS、`user.js`、Markdown 不在範圍內 |
 | `task userjs:check` | 檢查 `user.js`：語法、重複、空白（加 `-- --fix` 修正）；Firefox 開著時再和實際設定比對（加 `-- --offline` 略過）。不檢查順序：`user.js` 是手動分組的 |
