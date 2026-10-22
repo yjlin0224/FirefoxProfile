@@ -25,6 +25,8 @@
  *     point in the same time on a pinned tab's circle and on a long tab (within 1ms measured;
  *     --custom-ring-violet-time); still with reduced motion. At rest it matches Firefox's
  *     gradient: every ring pixel within 4 (of 255, RGB distance).
+ *   - Sidebar panel: no border, its text color at 7% over the window's Mica (as an unselected
+ *     pinned tab), nothing inside it painting over that (extensions' and the AI chatbot's bars).
  *   - Identical in every UI density, both sidebar modes, private windows, windowed or maximized.
  *
  * WHEN A FIREFOX UPDATE BREAKS SOMETHING
@@ -784,6 +786,47 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
 :root:not([inDOMFullscreen], [fullscreenNavToolboxHidden]) #sidebar-container:not([hidden]) ~ #sidebar-box {
   --sidebar-box-start-start-radius: var(--border-radius-large) !important;
   --sidebar-box-start-end-radius: var(--border-radius-large) !important;
+}
+
+/* Sidebar Panel: Translucent over the Window's Mica, No Border */
+/* The panel (bookmarks, history, extensions' and the AI chatbot's...) shows the window's
+   backdrop through a light tint: its text color at 7%, as an unselected pinned tab (so light
+   on a dark scheme, dark on a light one). The box paints it alone; the browser inside it,
+   which Firefox paints in the same color, is cleared, or the two would stack. No border:
+   Firefox draws 1px in --chrome-content-separator-color on three sides, which takes its 1px.
+   Firefox: sidebar.css (`#sidebar-box { background-color: var(--sidebar-background-color);
+   border: var(--border-width) solid var(--chrome-content-separator-color) }`, and the same
+   background on `#sidebar-box #sidebar`), tabbrowser/tabs.css (the unselected pinned tab's
+   `color-mix(in srgb, currentcolor 7%, transparent 93%)`). */
+#sidebar-box {
+  background-color: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
+  border: none !important;
+}
+
+#sidebar-box #sidebar {
+  background-color: transparent !important;
+}
+
+/* Extensions' sidebars sit in a document of their own, which paints -moz-dialog over the
+   panel. (The extension's page inside it is its own; it paints what it likes.)
+   Firefox: webext-panels.xhtml, global-shared.css (`background-color: -moz-dialog`) */
+#webextpanels-window {
+  background-color: transparent !important;
+}
+
+/* The AI chatbot panel's top bar (the provider menu) paints its own background and a
+   separator under it, and its bottom bar (summarize this page) one above it.
+   FRAGILE: chat.html's #header and #footer.
+   Firefox: genai/chat.html and its stylesheet */
+@-moz-document url("chrome://browser/content/genai/chat.html") {
+  #header {
+    background-color: transparent !important;
+    border-bottom: none !important;
+  }
+
+  #footer {
+    border-top: none !important;
+  }
 }
 
 /* Tab dialogs: 4px below the page's top edge, like the confirmation hint (Firefox pulls them
