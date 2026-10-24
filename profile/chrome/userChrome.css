@@ -206,6 +206,15 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
   --urlbar-margin-inline: var(--toolbarbutton-padding-outer) !important;
 }
 
+/* No Shadow round the Open Urlbar */
+/* Open, the urlbar (and its results under it) casts a 14px shadow. It spills over the sidebar:
+   on the pinned tab next to it the dark shadow read as a whitish, badly banded gradient.
+   Firefox: urlbar.css (`.urlbar, #searchbar { --urlbar-background-box-shadow-open }`, used by
+   .urlbar-background and .urlbarView-background when open) */
+.urlbar {
+  --urlbar-background-box-shadow-open: none !important;
+}
+
 /* Windowed Mode on Windows: Compensate for the Window Border */
 /* When not maximized, Windows 11 draws its 1px (DPI-scaled) window border over the top of the
    client area (on the left it sits outside), eating the toolbar's top spacing; add it back */
