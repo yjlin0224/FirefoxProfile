@@ -779,6 +779,10 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
    Firefox: findbar.css (`background-color: var(--toolbar-background-color)`,
    `transition-duration: 150ms`, [hidden] `transition-delay: 0s, 150ms`), browser-shared.css
    (`.browserContainer > findbar`), tabbrowser/content-area.css (.browserContainer) */
+
+/* TEMPORARY, on trial: the container tinted whether the find bar shows or not (below). The
+   rules it replaces, the tint only while the find bar shows and kept until it has slid away,
+   are kept here to switch back to:
 .browserContainer {
   transition: background-color 0s 150ms;
 
@@ -790,6 +794,12 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
 .browserContainer:has(> findbar:not([hidden])) {
   background-color: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
   transition-delay: 0s;
+}
+*/
+
+/* TEMPORARY, on trial: always tinted, so nothing changes as the find bar opens or closes */
+.browserContainer {
+  background-color: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
 }
 
 .browserContainer > findbar {
