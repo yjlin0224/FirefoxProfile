@@ -514,8 +514,13 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
 
 /* Fade the Tab List's Scrolling Edges */
 /* Firefox overlays 16px bands painted with --toolbox-background-color, which is transparent
-   with Mica, so the fade only shows in private windows. Mask the tab list itself instead:
-   16px from opacity 0 to 1, driven by the same attributes and 150ms timing as the bands.
+   with Mica, so the fade only shows in private windows. Mask the tab list itself instead,
+   driven by the same attributes and 150ms timing as the bands. Each edge fades over half a
+   tab row (18px: tabs 36px apart, center to center), easing in: opacity = progress squared,
+   in five straight steps (0, .04, .16, .36, .64, 1). A linear fade showed the edge: bright
+   content (favicons, text) was already 11% opaque 1px in (measured), a line against the
+   pinned tabs above; eased, it's 0.04 at a fifth of the way. The stops scale with the fade's
+   length, so they close up with it at either end of the scroll.
    Firefox: tabbrowser/tabs.css (#tabbrowser-arrowscrollbox ::part(overflow-*-indicator)). */
 
 @property --custom-tabs-fade-start {
@@ -531,14 +536,22 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
 }
 
 #tabbrowser-arrowscrollbox[orient='vertical'][overflowing] {
-  --custom-tabs-fade-start: 16px;
-  --custom-tabs-fade-end: 16px;
+  --custom-tabs-fade-start: calc(var(--tab-height-with-margin-padding) / 2);
+  --custom-tabs-fade-end: calc(var(--tab-height-with-margin-padding) / 2);
   mask-image: linear-gradient(
     to bottom,
-    transparent,
-    black var(--custom-tabs-fade-start),
-    black calc(100% - var(--custom-tabs-fade-end)),
-    transparent
+    rgb(0 0 0 / 0) calc(var(--custom-tabs-fade-start) * 0),
+    rgb(0 0 0 / 0.04) calc(var(--custom-tabs-fade-start) * 0.2),
+    rgb(0 0 0 / 0.16) calc(var(--custom-tabs-fade-start) * 0.4),
+    rgb(0 0 0 / 0.36) calc(var(--custom-tabs-fade-start) * 0.6),
+    rgb(0 0 0 / 0.64) calc(var(--custom-tabs-fade-start) * 0.8),
+    rgb(0 0 0 / 1) calc(var(--custom-tabs-fade-start) * 1),
+    rgb(0 0 0 / 1) calc(100% - var(--custom-tabs-fade-end) * 1),
+    rgb(0 0 0 / 0.64) calc(100% - var(--custom-tabs-fade-end) * 0.8),
+    rgb(0 0 0 / 0.36) calc(100% - var(--custom-tabs-fade-end) * 0.6),
+    rgb(0 0 0 / 0.16) calc(100% - var(--custom-tabs-fade-end) * 0.4),
+    rgb(0 0 0 / 0.04) calc(100% - var(--custom-tabs-fade-end) * 0.2),
+    rgb(0 0 0 / 0) calc(100% - var(--custom-tabs-fade-end) * 0)
   ) !important;
   transition:
     --custom-tabs-fade-start 150ms ease,
