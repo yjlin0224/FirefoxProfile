@@ -1062,12 +1062,36 @@ panel[type="arrow"] {
       background-color: transparent !important;
     }
 
-    /* Odd rows' stripes at 20%, as the about: pages' tables' (userContent.css) */
+    /* The permissions list was drawn as a native list box, its own opaque background with
+       rounded corners whatever its background-color (captured): drawn by CSS instead, its 1px
+       border square like the lists'. Its rows' hover as the lists' rows' (an opaque -moz-dialog
+       block on a transparent list otherwise).
+       Firefox: pageInfo.css (`#permList { appearance: auto; -moz-default-appearance: listbox }`,
+       `.permission:hover { background-color: -moz-dialog }`) */
+    & #permList {
+      appearance: none !important;
+    }
+
+    & .permission:hover {
+      background-color: hsla(0, 0%, 50%, 0.15) !important;
+    }
+
+    /* Odd rows' stripes at 20%, as the about: pages' tables' (userContent.css). Being
+       !important and more specific (two properties), the stripe hid Firefox's hover on odd
+       rows (seen in the media list), and would beat the selection below: both set again for
+       odd rows, the selection last.
+       Firefox: tree/tree.css (`::-moz-tree-row(hover) { background-color:
+       hsla(0, 0%, 50%, 0.15) }`) */
     & treechildren::-moz-tree-row(multicol, odd) {
       background-color: color-mix(in srgb, -moz-oddtreerow 20%, transparent) !important;
     }
 
-    & treechildren::-moz-tree-row(selected) {
+    & treechildren::-moz-tree-row(multicol, odd, hover) {
+      background-color: hsla(0, 0%, 50%, 0.15) !important;
+    }
+
+    & treechildren::-moz-tree-row(selected),
+    & treechildren::-moz-tree-row(multicol, odd, selected) {
       background-color: light-dark(rgb(207 207 216), rgb(91 91 102)) !important;
     }
 
