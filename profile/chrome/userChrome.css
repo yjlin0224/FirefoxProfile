@@ -949,6 +949,8 @@ panel[type="arrow"] {
     & #contentView {
       background-color: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
       border-start-start-radius: var(--border-radius-small) !important;
+      /* Clipped to that corner: a hovered or selected first row would cover it square */
+      overflow: clip !important;
     }
 
     /* The folder list's rows: hovered like an unselected pinned tab (its text color at 7%),
@@ -964,10 +966,43 @@ panel[type="arrow"] {
       --organizer-focus-selected-color: currentColor !important;
     }
 
-    /* No dotted focus ring round its current row: the selected one already stands out.
+    /* The main area's list (history, bookmarks): its selected rows keep their color when it
+       has the focus too, instead of turning the accent color.
+       Firefox: places/organizer.css (--organizer-focus-selected-*: the accent color,
+       --organizer-selected-*: gray, rgb(91, 91, 102) on a dark scheme) */
+    & #placeContent {
+      --organizer-focus-selected-background: var(--organizer-selected-background) !important;
+      --organizer-focus-selected-color: var(--organizer-selected-color) !important;
+    }
+
+    /* The downloads list's items: hovered and selected in the same colors as the history list's
+       rows, focused or not, square. Firefox gives them no hover; selected, unfocused
+       they took the system's -moz-cellhighlight (the accent color here, rgb(0, 221, 255)
+       measured), focused a Windows 7 style light blue gradient with white bevels, a 1px blue
+       outline and 6px corners.
+       Firefox: richlistbox.css (`richlistitem[selected]`), downloads/allDownloadsView.css
+       (`#downloadsListBox:focus > richlistitem[selected]`), places/organizer.css
+       (--organizer-hover-*) */
+    & #downloadsListBox > richlistitem {
+      border-radius: 0 !important;
+
+      &:hover {
+        background-color: var(--organizer-hover-background) !important;
+        color: var(--organizer-hover-color) !important;
+      }
+
+      &[selected] {
+        background: var(--organizer-selected-background) !important;
+        color: var(--organizer-selected-color) !important;
+        outline: none !important;
+      }
+    }
+
+    /* No dotted focus ring round the current row, in the folder list or the main area's: the
+       selected one already stands out.
        Firefox: tree.css (`treechildren::-moz-tree-row(current, focus) { outline:
        var(--default-focusring) }`) */
-    & #placesList treechildren::-moz-tree-row(current, focus) {
+    & :is(#placesList, #placeContent) treechildren::-moz-tree-row(current, focus) {
       outline: none !important;
     }
 
