@@ -476,6 +476,20 @@
     .search-handoff-button {
       box-shadow: none !important;
     }
+
+    /* The logo, tagline, subheader and search box sit at the bottom, as the new tab's search
+       box and top sites, right above the info text (its own 30px padding between them):
+       the free space goes above the logo instead of above the info text.
+       Firefox: aboutPrivateBrowsing.css (`.logo-and-wordmark { margin-block:
+       clamp(32px, 10vh, 120px) var(--space-medium) }`, `html.private .info-border {
+       margin-block-start: auto }`, the container a flex column) */
+    .container > .logo-and-wordmark {
+      margin-block-start: auto !important;
+    }
+
+    .container > .info-border {
+      margin-block-start: 0 !important;
+    }
   }
 
   @-moz-document url-prefix("about:keyboard") {
