@@ -67,7 +67,7 @@ Firefox 更新到新的主要版本後：
 | `task mods:update` | 把第三方樣式下載為上游最新的版本，並把對應的 commit 記錄到 `scripts/mods.json`；在這裡被手動改過的檔案會略過，加 `-- --force` 才覆寫。用 `git diff` 檢查後再部署 |
 | `task fmt` / `task fmt:check` | 用 Prettier（版本固定在 Taskfile，設定在 `.prettierrc.yaml`）格式化或檢查腳本、JSON、YAML；CSS、`user.js`、Markdown 不在範圍內 |
 | `task userjs:check` | 檢查 `user.js`：語法、重複、空白（加 `-- --fix` 修正）；Firefox 開著時再和實際設定比對（加 `-- --offline` 略過）。不檢查順序：`user.js` 是手動分組的 |
-| `task autoconfig:install` | 把 `install/` 複製到 Firefox 安裝資料夾的相同位置。安裝資料夾在 `Program Files` 底下，所以會跳出 UAC 要求系統管理員權限；Firefox 重新啟動後生效。裝的是最新 commit 的內容，不是工作目錄：`install/` 或 `scripts/host/autoconfig.ps1` 有未 commit 的修改時會拒絕執行。跳出 UAC 前會印出 commit 和每個檔案的 SHA-256；UAC 視窗只會顯示「Windows PowerShell」，看不出要裝什麼，所以先確認印出的內容。以系統管理員身分執行的腳本內容直接從 commit 傳入，要安裝的檔案也經過雜湊比對，檢查之後才被改動的內容裝不進去；錯誤會印在終端機上。Firefox 更新不會刪掉這兩個檔案（更新只刪自己清單 `precomplete` 上的檔案），解除安裝或換安裝位置後要重新安裝 |
+| `task autoconfig:install` | 把 `install/` 複製到 Firefox 安裝資料夾的相同位置。安裝資料夾在 `Program Files` 底下，所以會跳出 UAC 要求系統管理員權限；Firefox 重新啟動後生效。裝的是最新 commit 的內容，不是工作目錄：`install/` 或 `scripts/host/autoconfig.ps1` 有未 commit 的修改時會拒絕執行。跳出 UAC 前會印出 commit 和每個檔案的 SHA-256，等你按任意鍵才繼續（Ctrl+C 取消）；UAC 視窗只會顯示「Windows PowerShell」，看不出要裝什麼，所以先確認印出的內容。等按鍵需要終端機：在 Claude Code 用 `!` 執行時輸出要等指令結束才顯示，所以會直接停下，要在終端機執行，或加 `-- --yes` 不等按鍵。以系統管理員身分執行的腳本內容直接從 commit 傳入，要安裝的檔案也經過雜湊比對，檢查之後才被改動的內容裝不進去；錯誤會印在終端機上。Firefox 更新不會刪掉這兩個檔案（更新只刪自己清單 `precomplete` 上的檔案），解除安裝或換安裝位置後要重新安裝 |
 | `task autoconfig:check` | 比對安裝資料夾裡的 autoconfig 和 `install/`，不修改任何檔案；沒裝或內容不同只會警告 |
 | `task autoconfig:remove` | 從安裝資料夾刪除 `install/` 裡有的檔案（同樣需要系統管理員權限、同樣只用最新 commit），重新啟動 Firefox 後恢復原狀 |
 | `task check` | 一次跑完 `fmt:check`、`userjs:check` 和 `autoconfig:check`，commit 前用 |

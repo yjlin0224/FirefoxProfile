@@ -11,9 +11,12 @@
 //   - the .ps1's text is passed inline, from the commit;
 //   - the files go through a payload file whose SHA-256 is passed along; the elevated script
 //     reads it once and writes it only if the hash matches.
-// Before the prompt, the commit and each file's SHA-256 are printed: check them first.
+// Before the prompt, the commit and each file's SHA-256 are printed, and it waits for a key:
+// check them first. That needs a terminal; without one (e.g. Claude Code's !, which shows the
+// output only at the end) it stops there, unless --yes.
 //
-// Usage: node scripts/autoconfig.mjs <install | check | remove>
+// Usage: node scripts/autoconfig.mjs <install | check | remove> [--yes]
+//   --yes: don't wait for a key before the UAC prompt.
 //   check: compares the install folder with install/ (read-only). It only warns, so
 //   `task check` passes on a machine without the autoconfig.
 import { execFileSync, spawnSync } from 'node:child_process'
@@ -22,9 +25,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { installDir, outDir, repoDir, repoInstallDir } from './lib/config.mjs'
 
-const action = process.argv[2]
-if (!['install', 'check', 'remove'].includes(action)) {
-  console.error('usage: node scripts/autoconfig.mjs <install | check | remove>')
+const [action, ...flags] = process.argv.slice(2)
+if (!['install', 'check', 'remove'].includes(action) || flags.some((f) => f !== '--yes')) {
+  console.error('usage: node scripts/autoconfig.mjs <install | check | remove> [--yes]')
   process.exit(2)
 }
 const dir = installDir()
@@ -80,6 +83,28 @@ function committed() {
   return { commit, files, script: git('show', `HEAD:${PS1}`).toString() }
 }
 
+// Waits for a key before the UAC prompt; false on Ctrl+C
+function keyPressed() {
+  if (flags.includes('--yes')) return Promise.resolve(true)
+  if (!process.stdin.isTTY) {
+    console.error(
+      'No terminal to wait for a key in: run it in a terminal, or add -- --yes to skip the wait.',
+    )
+    process.exit(1)
+  }
+  process.stdout.write('Press any key to continue (Ctrl+C to cancel)... ')
+  return new Promise((resolve) => {
+    process.stdin.setRawMode(true)
+    process.stdin.resume()
+    process.stdin.once('data', (key) => {
+      process.stdin.setRawMode(false)
+      process.stdin.pause()
+      process.stdout.write('\n')
+      resolve(key[0] !== 0x03)
+    })
+  })
+}
+
 // Runs the commit's .ps1 as administrator and waits for it; returns its exit code and the
 // error it logged
 function elevated(act, { script, files }) {
@@ -126,7 +151,11 @@ if (action === 'check') {
   )
   for (const f of c.files)
     console.log(`  ${f.path}${action === 'install' ? `  sha256 ${sha256(f.data)}` : ''}`)
-  console.log(`  run by ${PS1} at that commit, as administrator: Windows asks next.`)
+  console.log(`  run by ${PS1} at that commit, as administrator: Windows asks after the key.`)
+  if (!(await keyPressed())) {
+    console.error('Cancelled.')
+    process.exit(1)
+  }
   const { code, error } = elevated(action, c)
   const files = status()
   print(files)
