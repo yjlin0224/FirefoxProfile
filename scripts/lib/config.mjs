@@ -13,6 +13,8 @@ export const outDir = path.join(scriptsDir, 'out')
 export const repoProfileDir = path.join(repoDir, 'profile')
 export const repoChromeDir = path.join(repoProfileDir, 'chrome')
 export const repoUserJs = path.join(repoProfileDir, 'user.js')
+// What `task autoconfig:install` copies: install/ mirrors the Firefox install folder
+export const repoInstallDir = path.join(repoDir, 'install')
 
 // .env: KEY=value lines, # comments. Real environment variables win, so a task or shell can
 // override a value for one run.
@@ -57,4 +59,17 @@ export function profile() {
     process.exit(2)
   }
   return { name, dir, chromeDir: path.join(dir, 'chrome'), userJs: path.join(dir, 'user.js') }
+}
+
+// The Firefox install folder (FIREFOX_INSTALL_DIR, else Developer Edition's default on
+// Windows). Exits with a hint when there's no Firefox there.
+export function installDir() {
+  const dir =
+    env('FIREFOX_INSTALL_DIR') ||
+    path.join(process.env.ProgramFiles ?? 'C:\\Program Files', 'Firefox Developer Edition')
+  if (!fs.existsSync(path.join(dir, 'firefox.exe'))) {
+    console.error(`No firefox.exe in ${dir}: set FIREFOX_INSTALL_DIR in .env.`)
+    process.exit(2)
+  }
+  return dir
 }

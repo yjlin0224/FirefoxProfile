@@ -2,7 +2,7 @@
  * TUNED FOR
  *   Firefox 159 Developer Edition (Oct 2026), Windows 11 (Mica + native theme, 200% scaling),
  *   browser.nova.enabled, sidebar.revamp, sidebar.verticalTabs, sidebar.visibility =
- *   always-show or expand-on-hover, sidebar on the left.
+ *   always-show or expand-on-hover, sidebar on the left; install/'s autoconfig installed.
  *
  * DESIGN SPEC: what "correct" looks like (scripts/browser/ measures all of it)
  *   - Grid: toolbar buttons, tabs, pinned tabs, group rows and sidebar buttons all have 32px
@@ -31,6 +31,8 @@
  *   - Menus and panels (bookmarks menu, downloads, history, app menu...): the system's acrylic
  *     under the Menu color, as context menus; no fade-in. The app menu's left edge stays where
  *     it was with Firefox's own panels.
+ *   - Library window (with install/'s autoconfig, which gives it windowsmica): the window's Mica
+ *     through its toolbar and folder list, the main area tinted like the sidebar panel.
  *   - Identical in every UI density, both sidebar modes, private windows, windowed or maximized.
  *
  * WHEN A FIREFOX UPDATE BREAKS SOMETHING
@@ -927,11 +929,12 @@ panel[type="arrow"] {
    windowsmica attribute on its root, as the browser window has (AppWindow.cpp reads it when the
    window opens, ChromeObserver.cpp when it changes). CSS can't add an attribute, so everything
    here waits for it: without one the window keeps Firefox's look, where anything transparent
-   would show black or whatever is behind the window (measured). Nothing adds it yet: see
-   README.md, 待辦. With it: the window, its toolbar and the folder list (left) show the Mica;
-   the main area (right: the history / bookmarks list or the downloads list, and the details
-   pane under them) is one block tinted like the sidebar panel, its top left corner rounded,
-   everything inside it transparent. No separators but the one above the details pane.
+   would show black or whatever is behind the window (measured). install/firefoxprofile.cfg
+   adds it when windows have Mica (task autoconfig:install). With it: the window, its toolbar
+   and the folder list (left) show the Mica; the main area (right: the history / bookmarks list
+   or the downloads list, and the details pane under them) is one block tinted like the sidebar
+   panel, its top left corner rounded, everything inside it transparent. No separators but the
+   one above the details pane.
    Firefox: places/organizer.css (--organizer-* colors, #placesToolbar border-bottom,
    #placesView > splitter border-inline-end, #downloadsListBox border), tree.css (treecol
    background, the focus ring) */

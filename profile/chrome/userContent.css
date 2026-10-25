@@ -3,6 +3,7 @@
  *   Firefox 159 Developer Edition (Oct 2026), Windows 11 (200% scaling), zh-TW.
  *   New tab: nova (browser.newtabpage.activity-stream.nova.enabled = true) with an uploaded
  *   wallpaper (newtabWallpapers.wallpaper = custom, its theme light), widgets on.
+ *   Mica windows, install/'s autoconfig installed.
  *
  * DESIGN SPEC: what "correct" looks like on the new tab (scripts/ measures it, see below)
  *   - Grid: 1rem = 16px (nova: 15px); layout column 72px (nova: 75px); spacing on 4px steps.
@@ -22,6 +23,8 @@
  *     24px page padding at the sides and bottom (the titles end 40px above the bottom). The page
  *     only scrolls once the search box has risen to 48px from the top (window < ~588px).
  *   - Fonts: UI Noto Sans, code Maple Mono (also in about:config and DevTools).
+ *   - Other about: pages (with install/'s autoconfig, task autoconfig:install): no background
+ *     of their own, the window's Mica through the page container's tint.
  *
  * WHEN A FIREFOX UPDATE BREAKS SOMETHING
  *   1. Measure with scripts/ (see scripts/README.md) and compare against the spec above. The
@@ -114,6 +117,27 @@
 @-moz-document url("about:logins") {
   .menu {
     font-family: inherit !important;
+  }
+}
+
+
+/* ==== about: Pages: Transparent over the Window's Mica ==== */
+
+/* Firefox's own pages (Settings, Add-ons, about:config, about:support…) show the window's Mica
+   through the page container's tint (userChrome.css, Find Bar), like the sidebar panel. It
+   takes two things: Firefox mustn't paint its default background behind the page, which the
+   tab's <browser transparent> stops, and the page mustn't paint its own (here).
+   Only with the attribute on, as either pref says: firefoxprofile.transparent_about_pages,
+   set by install/firefoxprofile.cfg (task autoconfig:install), which adds the attribute on
+   about: pages, or Firefox's browser.tabs.allow_transparent_browser, every tab. Without it the
+   page keeps its background: the default one Firefox paints instead is another color
+   (#1C1B22, nova's pages #121114: measured).
+   Firefox: in-content/common-shared.css (`:root { background-color: var(--background-color-canvas) }`) */
+@media -moz-pref("browser.tabs.allow_transparent_browser"), -moz-pref("firefoxprofile.transparent_about_pages") {
+  @-moz-document url-prefix("about:") {
+    :root {
+      background-color: transparent !important;
+    }
   }
 }
 

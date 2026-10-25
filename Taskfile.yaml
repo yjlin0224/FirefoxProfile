@@ -97,10 +97,30 @@ tasks:
       - node scripts/userjs-check.mjs {{if .PORT}}--port {{.PORT}}{{end}} {{.CLI_ARGS}}
 
   check:
-    desc: All checks (formatting and user.js), e.g. before a commit
+    desc: All checks (formatting, user.js, the installed autoconfig), e.g. before a commit
     cmds:
       - task: fmt:check
       - task: userjs:check
+      - task: autoconfig:check
+
+  autoconfig:install:
+    desc:
+      Copy install/ (the autoconfig) to the Firefox install folder, as administrator (a UAC prompt);
+      restart Firefox after
+    cmds:
+      - node scripts/autoconfig.mjs install
+
+  autoconfig:check:
+    desc: Compare the Firefox install folder's autoconfig with install/ (changes nothing)
+    cmds:
+      - node scripts/autoconfig.mjs check
+
+  autoconfig:remove:
+    desc:
+      Remove install/'s files (the autoconfig) from the Firefox install folder, as administrator (a
+      UAC prompt)
+    cmds:
+      - node scripts/autoconfig.mjs remove
 
   prefs:dump:
     desc:

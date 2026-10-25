@@ -12,6 +12,11 @@ Firefox Developer Edition customization: `profile/chrome/userChrome.css` (with
   its folders (chrome/: files missing from the repo are deleted from the profile); nothing
   else in the profile folder is touched. Only `user.js` and `chrome/` may be in `profile/`
   (deploy refuses anything else; `.gitignore` ignores it): never copy profile data in.
+- `install/` mirrors the Firefox install folder: the autoconfig (`defaults/pref/autoconfig.js`,
+  `firefoxprofile.cfg`), installed by `task autoconfig:install` (a UAC prompt, so the user
+  runs it; it installs the last commit only, so commit first), never by deploy. The .cfg runs with full privileges at every startup: keep it
+  self-contained, never make it read or load a file from the profile or the repo (anything
+  running as the user can write those).
 - Run everything through `Taskfile.yaml` (`task --list`). Add reusable scripts under
   `scripts/` and a task for them; keep one-off experiments out of the repo.
 - Keep one `task watch` running in the background while editing CSS; it re-detects the

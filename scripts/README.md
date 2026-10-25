@@ -14,10 +14,11 @@ commands below are what the tasks run.
 | `wallpaper-open.mjs` | Open a saved wallpaper by number (or all of them in a folder): copies it to `out/wallpapers/` with the extension its bytes call for, since the library's files have none |
 | `wallpaper-position.mjs` | List the new tab's saved wallpapers, or set one's position by renaming its file (Firefox closed): Firefox sets the position pref from the file name whenever a wallpaper is applied and at every startup |
 | `about-preferences.mjs` | Write `reference/about-preferences.{defaults,current}.js`: about:preferences page by page, each setting with the prefs it writes and their default/current values, plus the pref-holding dialogs buttons open (structure read by `browser/about-preferences.js`) |
+| `autoconfig.mjs` | The repo's `install/` (the autoconfig) vs the Firefox install folder (`FIREFOX_INSTALL_DIR`, else Developer Edition's default): `check` compares (read-only, warns only), `install` / `remove` write or delete `install/`'s files there as administrator (a UAC prompt). Both use the last commit only (they refuse uncommitted changes to `install/` or `host/autoconfig.ps1`) and print its files' SHA-256 first: the elevated PowerShell gets `host/autoconfig.ps1`'s text inline from the commit, and the files through a payload file it uses only if its SHA-256 matches, so nothing changed after the check runs or lands with administrator rights. Its errors come back through `out/autoconfig.log` |
 | `userjs-check.mjs` | Check `user.js` offline (syntax, duplicates, spacing) and against the running Firefox (type, current value, default) |
 | `lib/` | Shared: `.env` and paths (`config.mjs`), the RDP client and port finder (`rdp.mjs`), the third-party mods' sources (`mods.mjs`), deploy (`sync.mjs`), live reload (`reload.mjs`, `apply.mjs`), the new tab's wallpaper library (`wallpapers.mjs`) |
 | `browser/` | Scripts that run **inside Firefox** (parent process, chrome privileges): measurements and `reload.js` |
-| `host/` | Scripts that run on Windows: real screen captures, pixel dumps, real mouse clicks |
+| `host/` | Scripts that run on Windows: real screen captures, pixel dumps, real mouse clicks, the elevated autoconfig copy |
 | `out/` | Their output (images, logs). Not committed |
 
 ## Talking to Firefox
