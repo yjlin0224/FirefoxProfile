@@ -24,7 +24,9 @@
  *     only scrolls once the search box has risen to 48px from the top (window < ~588px).
  *   - Fonts: UI Noto Sans, code Maple Mono (also in about:config and DevTools).
  *   - Other about: pages (with install/'s autoconfig, task autoconfig:install): no background
- *     of their own, the window's Mica through the page container's tint.
+ *     of their own, the window's Mica through the page container's tint. Cards, panels and
+ *     tables at 20% of their color, without shadows. Headers that stay at the top as a page
+ *     scrolls: transparent at the top, the page's color at 80% from 1px scrolled.
  *
  * WHEN A FIREFOX UPDATE BREAKS SOMETHING
  *   1. Measure with scripts/ (see scripts/README.md) and compare against the spec above. The
@@ -132,11 +134,416 @@
    about: pages, or Firefox's browser.tabs.allow_transparent_browser, every tab. Without it the
    page keeps its background: the default one Firefox paints instead is another color
    (#1C1B22, nova's pages #121114: measured).
+   Below, by kind: the pages' own background; the headers that stay at the top as a page
+   scrolls; cards and panels; tables; backgrounds not on the root; lists.
    Firefox: in-content/common-shared.css (`:root { background-color: var(--background-color-canvas) }`) */
+
+/* How much of its page's background a sticky header has (Sticky Headers, below). Registered,
+   so it animates; outside the rules below, as @property can't go inside @-moz-document */
+@property --custom-sticky-backdrop {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
 @media -moz-pref("browser.tabs.allow_transparent_browser"), -moz-pref("firefoxprofile.transparent_about_pages") {
   @-moz-document url-prefix("about:") {
     :root {
       background-color: transparent !important;
+    }
+  }
+
+
+  /* ---- Sticky Headers ---- */
+
+  /* Settings' search box, Add-ons' header, about:config's search bar, Firefox View's headers
+     and about:processes' table header stay at the top as the page scrolls, on the page's
+     background to hide what scrolls under them. At the top, with nothing under them, they're
+     transparent like the page; scrolled 1px or more, they have the page's background at 80%
+     (--custom-sticky-color where a page's header had another color), so what passes under
+     them shows through dimmed. A switch, not a fade: wheel scrolling slows down over its last
+     pixels (4px to 0 took 170ms, logged), so a fade over them lingered half-done and read as a
+     lighter flash before the box went (recorded).
+     A scroll-driven animation (one step) of the registered --custom-sticky-backdrop, on a view
+     timeline of what scrolls (--custom-sticky-page, set per page below on an element whose top
+     is the scroller's top unscrolled): cover 0% is that top at the scrollport's bottom, so
+     scrolled 0 to 1px is cover 100vh to 100vh + 1px (every scrollport here is the window's
+     height). Not a scroll() timeline: one goes inactive when the page can't scroll, and Firefox
+     then kept the animation's last value (Add-ons' themes scrolled, then the short plugins
+     list: the header stayed dark, measured).
+     One rule for the five headers: each selector matches on its own page only (counted).
+     Where a header doesn't span the page, it reaches 16px further out at the sides, its
+     contents left where they were, and its bottom corners round with 32px: around the search
+     field's (half its height, 16px) and the 16px below it, in Settings.
+     Tried and dropped, in Settings:
+       - The new tab's blur: Firefox draws a backdrop-filter's blurred copy over what's behind
+         instead of in its place, so on this transparent page text straight on it (the page's
+         heading) stayed sharp under the box while text on the cards got blurred; and the blur
+         reads past the page, so the page container's 7% tint was drawn twice (63 vs 48).
+       - Fading the content out under the box with a mask moved down as the page scrolls: it
+         lagged behind fast scrolling, things showed above the box for a moment.
+       - Making the panes below the box the scroller: the wheel no longer scrolled over the box
+         or the column's padding, and Firefox's per-pane scroll positions were lost.
+     Firefox: moz-input-text.css (`min-height: var(--input-min-height)`) */
+  @-moz-document url-prefix("about:preferences"), url-prefix("about:settings"), url-prefix("about:addons"), url-prefix("about:config"), url-prefix("about:firefoxview"), url-prefix("about:processes") {
+    @keyframes custom-sticky-backdrop {
+      from {
+        --custom-sticky-backdrop: 0%;
+      }
+      to {
+        --custom-sticky-backdrop: 80%;
+      }
+    }
+
+    #search-container,
+    .sticky-container,
+    #toolbar,
+    #process-thead {
+      background-color: color-mix(in srgb, var(--custom-sticky-color, var(--background-color-canvas)) var(--custom-sticky-backdrop), transparent) !important;
+      animation: custom-sticky-backdrop steps(1, jump-end) both !important;
+      animation-timeline: --custom-sticky-page !important;
+      animation-range: cover 100vh cover calc(100vh + 1px) !important;
+    }
+  }
+
+  /* Settings: the search box. Its padding under the search field 16px, as at its sides,
+     instead of 0.5rem (7.5px: Settings' rem is 15px), also in .main-content's scroll padding.
+     Firefox: preferences/preferences.css (`.main-content { --search-container-padding:
+     var(--space-small) }`, `#search-container { position: sticky; margin-inline-start: -4px;
+     width: calc(100% + 4px); padding-inline: var(--focus-outline-offset); padding-bottom:
+     var(--search-container-padding); background-color: var(--background-color-canvas) }`);
+     .main-content scrolls */
+  @-moz-document url-prefix("about:preferences"), url-prefix("about:settings") {
+    .main-content {
+      --search-container-padding: 16px !important;
+    }
+
+    .pane-container {
+      view-timeline: --custom-sticky-page block !important;
+    }
+
+    #search-container {
+      padding-inline: 16px !important;
+      margin-inline-start: calc(-4px - 16px + var(--focus-outline-offset)) !important;
+      border-end-start-radius: calc(var(--input-min-height) / 2 + var(--search-container-padding)) !important;
+      border-end-end-radius: calc(var(--input-min-height) / 2 + var(--search-container-padding)) !important;
+    }
+  }
+
+  /* Add-ons' header: the search row, the page's heading (and the themes' appearance choice).
+     No more padding below the heading: Firefox's 16px under it stays. The themes' appearance
+     choice gets 16px below it, as Settings' search field: it ended on the box's bottom edge.
+     Firefox: aboutaddons.css (`.sticky-container { margin-inline-start: var(--main-margin-start);
+     margin-inline-end: var(--main-margin-end); background: var(--background-color-canvas) }`,
+     `.main-search, .main-heading { background: var(--background-color-canvas) }`); the
+     document scrolls */
+  @-moz-document url-prefix("about:addons") {
+    #full {
+      view-timeline: --custom-sticky-page block !important;
+    }
+
+    .sticky-container {
+      padding-inline: 16px !important;
+      margin-inline-start: calc(var(--main-margin-start) - 16px) !important;
+      margin-inline-end: calc(var(--main-margin-end) - 16px) !important;
+      border-end-start-radius: calc(var(--input-min-height) / 2 + 16px) !important;
+      border-end-end-radius: calc(var(--input-min-height) / 2 + 16px) !important;
+
+      & > :is(.main-search, .main-heading) {
+        background-color: transparent !important;
+      }
+
+      &:has(> aboutaddons-themes-mode:not([hidden])) {
+        padding-bottom: 16px !important;
+      }
+    }
+  }
+
+  /* about:config's search bar spans the page, edge to edge: no wider and not rounded.
+     Firefox: aboutconfig.css (`#toolbar { position: sticky; background-color:
+     var(--background-color-canvas) }`); the document scrolls */
+  @-moz-document url-prefix("about:config") {
+    body {
+      view-timeline: --custom-sticky-page block !important;
+    }
+  }
+
+  /* Firefox View: each view's header (heading and search box) 16px out at the sides and below
+     the search box, instead of Firefox's 8px and 33px, without the gradient that faded its
+     bottom 5% out (in the page's color, opaque: it would draw a band), in Firefox View's page
+     color (#2b2a33), as it had, not the canvas color.
+     Firefox: firefoxview.css (`.sticky-container { position: sticky; padding: 72px 8px 33px;
+     margin: 0 -4px }`, `.sticky-container.bottom-fade { background: linear-gradient(...) }`);
+     the document scrolls */
+  @-moz-document url-prefix("about:firefoxview") {
+    body {
+      view-timeline: --custom-sticky-page block !important;
+    }
+
+    .sticky-container {
+      --custom-sticky-color: var(--fxview-background-color);
+      padding-inline: 16px !important;
+      padding-bottom: 16px !important;
+      /* Its contents left where they were: 8px of Firefox's padding, 4px of its margin */
+      margin-inline: calc(-4px - 16px + 8px) !important;
+      border-end-start-radius: calc(var(--input-min-height) / 2 + 16px) !important;
+      border-end-end-radius: calc(var(--input-min-height) / 2 + 16px) !important;
+      background-image: none !important;
+    }
+  }
+
+  /* about:processes' table header, fixed at the top and the page's width: no wider and not
+     rounded, in the table's color (#252428), over the table's own 20% (Tables, below).
+     Firefox: aboutProcesses.css (`#process-thead { position: fixed; background-color:
+     var(--background-color-box) }`); the document scrolls */
+  @-moz-document url-prefix("about:processes") {
+    body {
+      view-timeline: --custom-sticky-page block !important;
+    }
+
+    #process-thead {
+      --custom-sticky-color: var(--background-color-box);
+    }
+  }
+
+
+  /* ---- Cards and Panels ---- */
+
+  /* Cards and panels lose their shadow, and their background goes to 20%, so the window's
+     Mica shows through them.
+     The cards (moz-card): Settings, Add-ons, Firefox View's other pages and the ones that only
+     have cards: about:debugging, about:sync-log, about:third-party, about:windows-messages,
+     about:protections, about:keyboard, about:pdf's features view.
+     Firefox: moz-card.css (`background-color: var(--card-background-color);
+     box-shadow: var(--card-box-shadow)`), tokens (--card-background-color:
+     var(--background-color-box)) */
+  @-moz-document url-prefix("about:preferences"), url-prefix("about:settings"), url-prefix("about:addons"), url-prefix("about:config"), url-prefix("about:firefoxview"), url-prefix("about:debugging"), url-prefix("about:sync-log"), url-prefix("about:third-party"), url-prefix("about:windows-messages"), url-prefix("about:protections"), url-prefix("about:keyboard"), url-prefix("about:processes"), url-prefix("about:pdf") {
+    moz-card {
+      --card-box-shadow: none !important;
+      --card-background-color: color-mix(in srgb, var(--background-color-box) 20%, transparent) !important;
+    }
+  }
+
+  /* Firefox View's own card element.
+     Firefox: card-container.css (`.card-container { background-color:
+     var(--fxview-background-color-secondary); box-shadow }`) */
+  @-moz-document url-prefix("about:firefoxview") {
+    .card-container {
+      box-shadow: none !important;
+      background-color: color-mix(in srgb, var(--fxview-background-color-secondary) 20%, transparent) !important;
+    }
+  }
+
+  /* Other pages' own panels: about:memory's rows of buttons, about:webrtc's sections,
+     about:protections' tracker chart panel (in a card), about:certificate's tabs and their
+     content, about:pdf's drop zone and promo card.
+     Firefox: aboutMemory.css (`div.opsRow { background: var(--background-color-box) }`),
+     aboutWebrtc.css (`#content > div, #mediactx > div`), protections.css (`.tab-content {
+     background-color: var(--background-color-box-info) }`), certificate-section.css
+     (`.certificate-tabs { box-shadow: var(--card-box-shadow) }`, `.tab, .info-groups {
+     background-color: var(--background-color-box) }`, `.info-groups { box-shadow }`),
+     aboutPDF.css (`#dropzone { background-color: var(--background-color-box);
+     box-shadow: var(--box-shadow-level-3) }`), moz-promo.css (`.container {
+     background-color: var(--promo-background-color) }`) */
+  @-moz-document url-prefix("about:memory") {
+    div.opsRow {
+      background-color: color-mix(in srgb, var(--background-color-box) 20%, transparent) !important;
+    }
+  }
+
+  @-moz-document url-prefix("about:webrtc") {
+    :is(#content, #mediactx) > div {
+      background-color: color-mix(in srgb, var(--background-color-box) 20%, transparent) !important;
+    }
+  }
+
+  @-moz-document url-prefix("about:protections") {
+    .tab-content {
+      background-color: color-mix(in srgb, var(--background-color-box-info) 20%, transparent) !important;
+    }
+  }
+
+  @-moz-document url-prefix("about:certificate") {
+    .certificate-tabs,
+    .info-groups {
+      box-shadow: none !important;
+    }
+
+    .tab,
+    .info-groups {
+      background-color: color-mix(in srgb, var(--background-color-box) 20%, transparent) !important;
+    }
+  }
+
+  @-moz-document url-prefix("about:pdf") {
+    #dropzone {
+      box-shadow: none !important;
+      background-color: color-mix(in srgb, var(--background-color-box) 20%, transparent) !important;
+    }
+
+    /* The promo's box, inside moz-promo (no other .container on the page) */
+    .container {
+      background-color: color-mix(in srgb, var(--promo-background-color) 20%, transparent) !important;
+    }
+  }
+
+
+  /* ---- Tables ---- */
+
+  /* Tables at 20%, as the cards; striped rows' stripes at 20% too. The headers keep their
+     color. A stripe's !important hides Firefox's row hover, so it's set again on them.
+     The info pages (about:support, about:profiles, about:buildconfig, about:cache,
+     about:license, about:unloads, about:url-classifier, about:networking): their tables and
+     boxes (the refresh box at about:support's top right, about:profiles' ones).
+     Firefox: in-content/info-pages.css (`table, .action-box { background-color:
+     var(--table-background-color) }`), aboutNetworking.css (`.tab table`) */
+  @-moz-document url-prefix("about:support"), url-prefix("about:profiles"), url-prefix("about:buildconfig"), url-prefix("about:cache"), url-prefix("about:license"), url-prefix("about:unloads"), url-prefix("about:url-classifier"), url-prefix("about:networking") {
+    table,
+    .action-box {
+      background-color: color-mix(in srgb, var(--table-background-color) 20%, transparent) !important;
+    }
+  }
+
+  /* about:networking's striped rows (their hover was hidden on even rows: measured).
+     Firefox: aboutNetworking.css (`tbody tr:nth-child(2n) { background-color:
+     var(--table-row-background-color-alternate) }`, `tbody tr:hover { background-color:
+     var(--background-color-list-item-hover) }`) */
+  @-moz-document url-prefix("about:networking") {
+    tbody tr:nth-child(2n) {
+      background-color: color-mix(in srgb, var(--table-row-background-color-alternate) 20%, transparent) !important;
+
+      &:hover {
+        background-color: var(--background-color-list-item-hover) !important;
+      }
+    }
+  }
+
+  /* about:config: the table without a background, its odd rows' stripes at 20%.
+     Firefox: aboutconfig.css (`#prefs { background-color: var(--table-row-background-color) }`,
+     `#prefs > tr.odd { background-color: var(--table-row-background-color-alternate) }`,
+     `#prefs > tr:hover { background-color: var(--background-color-list-item-hover) }`) */
+  @-moz-document url-prefix("about:config") {
+    #prefs {
+      background-color: transparent !important;
+    }
+
+    #prefs > tr.odd {
+      background-color: color-mix(in srgb, var(--table-row-background-color-alternate) 20%, transparent) !important;
+
+      &:hover {
+        background-color: var(--background-color-list-item-hover) !important;
+      }
+    }
+  }
+
+  /* about:processes: the table, the whole page. The rows' hover and selection keep Firefox's
+     colors: nothing here sets the rows'.
+     Firefox: aboutProcesses.css (`#process-table { background-color:
+     var(--background-color-box) }`) */
+  @-moz-document url-prefix("about:processes") {
+    #process-table {
+      background-color: color-mix(in srgb, var(--background-color-box) 20%, transparent) !important;
+    }
+  }
+
+
+  /* ---- Backgrounds Not on the Root ---- */
+
+  /* Pages whose own background is elsewhere: on the body (Firefox View, about:compat,
+     about:pdf), drawn over the whole page (the private window's new tab: a fox tail), or on a
+     sidebar (about:keyboard's: a column beside what scrolls, nothing passes under it, so just
+     transparent, like Settings' and Add-ons' sidebars). The private window's new tab also
+     loses its search box's shadow; the rest of it stays as Firefox has it.
+     Firefox: firefoxview.css (`body { background-color: var(--fxview-background-color) }`),
+     aboutCompat.css (`body { background-color: var(--background-color) }`), aboutPDF.css
+     (`body { background-color: var(--background-color-canvas) }`), aboutPrivateBrowsing.css
+     (`body::before { position: fixed; background-image: url(privatebrowsing/fox-tail.svg) }`),
+     contentSearchHandoffUI.css (`.search-handoff-button { box-shadow:
+     var(--box-shadow-level-3) }`), customkeys-sidebar.css (`.customkeys-sidebar { position:
+     sticky; background-color: var(--background-color-canvas) }`) */
+  @-moz-document url-prefix("about:firefoxview"), url-prefix("about:compat"), url-prefix("about:pdf") {
+    body {
+      background-color: transparent !important;
+    }
+  }
+
+  @-moz-document url-prefix("about:privatebrowsing") {
+    body::before {
+      background-image: none !important;
+    }
+
+    .search-handoff-button {
+      box-shadow: none !important;
+    }
+  }
+
+  @-moz-document url-prefix("about:keyboard") {
+    .customkeys-sidebar {
+      background-color: transparent !important;
+    }
+  }
+
+
+  /* ---- Lists ---- */
+
+  /* about:logins: the header transparent (the page doesn't scroll, nothing passes under it);
+     the list at 20%, as the cards, its header and count row on it without their own (two 20%
+     layers would make about 36%); the selected login in the page's color at 20%, as Firefox
+     gives it the page's color to join the details beside it. Hovered logins keep Firefox's
+     color. The top right menu loses its shadow, as the cards, but keeps its background.
+     Firefox: aboutLogins.css (`header { background-color: var(--background-color-canvas) }`),
+     login-list.css (`:host, .meta, .login-list-header { background-color:
+     var(--background-color-box) }`), login-list-lit-item.css (`.list-item.selected {
+     background-color: var(--background-color-canvas) }`, in each <list-item>; login-list.css's
+     `.login-list-item.selected` matches nothing any more), menu-button.css (`.menu {
+     box-shadow: var(--popup-box-shadow) }`) */
+  @-moz-document url-prefix("about:logins") {
+    header,
+    .meta,
+    .login-list-header {
+      background-color: transparent !important;
+    }
+
+    .list-item.selected {
+      background-color: color-mix(in srgb, var(--background-color-canvas) 20%, transparent) !important;
+    }
+
+    .menu {
+      box-shadow: none !important;
+    }
+
+    login-list {
+      background-color: color-mix(in srgb, var(--background-color-box) 20%, transparent) !important;
+    }
+  }
+
+  /* about:downloads: the list's background at 20%, as the cards (its border kept); its items
+     hovered and selected as in the Library's downloads list (userChrome.css, Library Window),
+     focused or not. Firefox gives them no hover; selected, unfocused they took the system's
+     -moz-cellhighlight (light lavender with dark gray text here), focused a Windows 7 style
+     light blue gradient with white bevels, a 1px blue outline and 6px corners.
+     FRAGILE: the Library's colors, copied from organizer.css (--organizer-hover-background,
+     --organizer-selected-background), which only the Library has.
+     Firefox: in-content/common-shared.css (`xul|richlistbox { background-color:
+     var(--background-color-box) }`), richlistbox.css (`richlistitem[selected]`),
+     downloads/allDownloadsView.css (`#downloadsListBox:focus > richlistitem[selected]`) */
+  @-moz-document url-prefix("about:downloads") {
+    #downloadsListBox {
+      background-color: color-mix(in srgb, var(--background-color-box) 20%, transparent) !important;
+
+      & > richlistitem {
+        border-radius: 0 !important;
+
+        &:hover {
+          background-color: light-dark(rgb(207 207 216 / 0.66), rgb(82 82 94)) !important;
+        }
+
+        &[selected] {
+          background: light-dark(rgb(207 207 216), rgb(91 91 102)) !important;
+          color: inherit !important;
+          outline: none !important;
+        }
+      }
     }
   }
 }
