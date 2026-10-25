@@ -118,6 +118,27 @@
   border-radius: var(--border-radius-circle) !important;
 }
 
+/* Extend UserChromes/iconized_content_context_menu.css */
+
+/* Page Info, which install/firefoxprofile.cfg adds to the page's context menu: an info icon,
+   not the mod's default (a tab) for items it doesn't know. Firefox has no page-info.svg. */
+#context-viewinfo::before {
+  content: url('chrome://global/skin/icons/info.svg');
+}
+
+/* Extend UserChromes/iconized_tabs_context_menu.css */
+
+/* View Page Source and Page Info, which install/firefoxprofile.cfg adds to the tab context
+   menu: the page context menu's icons for them (the mod's for View Page Source, above for
+   Page Info), not the mod's default (a tab) for items it doesn't know */
+#context_viewTabSource::before {
+  content: url('chrome://browser/skin/characterEncoding.svg');
+}
+
+#context_viewTabInfo::before {
+  content: url('chrome://global/skin/icons/info.svg');
+}
+
 /* Private Browsing Indicator as Menu Button */
 /* Replaces UserChromes/privatemode_indicator_as_menu_button.css (MrOtherGuy/firefox-csshacks) */
 
