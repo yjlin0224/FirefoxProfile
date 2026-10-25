@@ -32,7 +32,8 @@
  *     under the Menu color, as context menus; no fade-in. The app menu's left edge stays where
  *     it was with Firefox's own panels.
  *   - Library window (with install/'s autoconfig, which gives it windowsmica): the window's Mica
- *     through its toolbar and folder list, the main area tinted like the sidebar panel.
+ *     through its toolbar and folder list, the main area tinted like the sidebar panel. Page
+ *     Info the same: its row of tabs over the Mica, its panels tinted.
  *   - Identical in every UI density, both sidebar modes, private windows, windowed or maximized.
  *
  * WHEN A FIREFOX UPDATE BREAKS SOMETHING
@@ -1022,6 +1023,61 @@ panel[type="arrow"] {
 
     & #downloadsListBox {
       border: none !important;
+    }
+  }
+}
+
+/* Page Info Window: over Mica, Like the Library */
+/* Page Info gets a backdrop from Windows with windowsmica on its root, as the Library;
+   install/firefoxprofile.cfg adds it when windows have Mica, and everything here waits for it
+   (without it, the transparent parts would show black or what's behind the window). With it:
+   the window and its row of tabs show the Mica, no line under the tabs; the panels below are
+   one block tinted like the sidebar panel, the lists and boxes in them transparent (column
+   headers included), their borders kept. The lists' selected rows as in the Library's: gray,
+   focused or not, with no dotted focus ring.
+   FRAGILE: the selection colors, copied from the Library's organizer.css
+   (--organizer-selected-background, --organizer-color), which Page Info doesn't have.
+   Firefox: pageInfo.css (`#topBar { border-bottom: 1px solid ThreeDShadow;
+   background-color: Field }`, `#imagecontainerbox, #permList { background: Field }`),
+   global.css (the root's -moz-dialog), tree/tree.css (`tree { background-color: Field }`,
+   `treecol { background-color: -moz-colheader }`, `::-moz-tree-row(multicol, odd) {
+   background-color: -moz-oddtreerow }`, the selected rows' SelectedItem and
+   -moz-cellhighlight, the focus ring) */
+@-moz-document url("chrome://browser/content/pageinfo/pageInfo.xhtml") {
+  #main-window[windowsmica] {
+    &,
+    & #topBar {
+      background-color: transparent !important;
+    }
+
+    & #topBar {
+      border-bottom: none !important;
+    }
+
+    & #mainDeck {
+      background-color: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
+    }
+
+    & :is(tree, treecol, #imagecontainerbox, #permList) {
+      background-color: transparent !important;
+    }
+
+    /* Odd rows' stripes at 20%, as the about: pages' tables' (userContent.css) */
+    & treechildren::-moz-tree-row(multicol, odd) {
+      background-color: color-mix(in srgb, -moz-oddtreerow 20%, transparent) !important;
+    }
+
+    & treechildren::-moz-tree-row(selected) {
+      background-color: light-dark(rgb(207 207 216), rgb(91 91 102)) !important;
+    }
+
+    & treechildren::-moz-tree-cell-text(selected),
+    & treechildren::-moz-tree-image(selected) {
+      color: light-dark(rgb(21 20 26), rgb(251 251 254)) !important;
+    }
+
+    & treechildren::-moz-tree-row(current, focus) {
+      outline: none !important;
     }
   }
 }
