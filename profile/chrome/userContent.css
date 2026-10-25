@@ -16,7 +16,8 @@
  *     6 below a 652px page, 4 below 500px; all 32 shown. On hover the tile grows to 72px and
  *     the icon from 40px to 48px, both around their center. Pin and menu button centered 12px
  *     from the tile's top corners; the menu opens with a corner on the button's corner.
- *     Titles: one line, 16px line height, 8px under the tile, white outline + dark glow.
+ *     Titles: one line, 16px line height, 8px under the tile; letters in the page color, outline
+ *     and glow in the text color (white letters, dark outline and glow over a light wallpaper).
  *   - Search box: as wide as the row of tiles (first tile's left edge to last one's right),
  *     36px above the tiles.
  *   - Page: no logo, no right sidebar. Search box + top sites sit at the bottom of the window:
@@ -827,14 +828,17 @@
   }
 
   /* Title outline (top sites, and the widgets section's heading), so it reads over any part
-     of the wallpaper: a 1px outline in the page background color (light around nova's dark
-     text on a light wallpaper, dark around light text on a dark one), painted under the
-     letters (the stroke is centered on the glyph edge, so 2px wide shows 1px outside), and a
-     glow in the text color around that. Shadows are cast by the letters alone and painted
-     under the outline, so the glow has to reach past it */
+     of the wallpaper: the letters in the page background color, a 1px outline in the text
+     color (dark on a light wallpaper, light on a dark one) painted under them (the stroke is
+     centered on the glyph edge, so 2px wide shows 1px outside), and a glow in the text color
+     around that. Shadows are cast by the letters alone and painted under the outline, so the
+     glow has to reach past it. The private window's new tab does the same
+     (install/firefoxprofile.cfg).
+     Firefox: activity-stream.css, `.top-site-outer .title { color: var(--newtab-contextual-text-primary-color) }` */
   .top-site-outer .title,
   .widgets-title-heading h1 {
-    -webkit-text-stroke: 2px var(--newtab-background-color);
+    color: var(--newtab-background-color) !important;
+    -webkit-text-stroke: 2px var(--newtab-contextual-text-primary-color);
     paint-order: stroke fill;
     text-shadow:
       0 0 3px color-mix(in srgb, var(--newtab-contextual-text-primary-color) 90%, transparent),

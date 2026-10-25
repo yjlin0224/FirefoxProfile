@@ -15,7 +15,7 @@ Firefox Developer Edition 的介面自訂：`userChrome.css`（瀏覽器介面�
 | `profile/chrome/userContent.css` | 網頁內容：新分頁（nova）、about: 頁面字型、about:config、DevTools、檢視原始碼。開頭同樣有規格和修理說明 |
 | `profile/chrome/UserChromes/` | 第三方樣式（由 `userChrome.css` `@import`），來源網址與目前版本對應的上游 commit 列在 `scripts/mods.json` |
 | `profile/user.js` | 每次啟動都會套用的偏好設定 |
-| `install/` | Firefox 安裝資料夾的 autoconfig（不會隨 `task deploy` 部署，用 `task autoconfig:install` 安裝）：`defaults/pref/autoconfig.js` 讓 Firefox 每次啟動時執行 `firefoxprofile.cfg`。這個腳本替歷史視窗和頁面資訊視窗加上 `windowsmica`、替顯示 about: 頁面的分頁加上 `transparent`，讓 CSS 裡等著這兩個屬性的樣式生效；也把「頁面資訊」加回網頁的右鍵選單（Firefox 從那裡拿掉了，Ctrl+I 和「工具」選單還能打開），並在分頁的右鍵選單加上「檢視原始碼」和「頁面資訊」（作用在按右鍵的那個分頁）。見下面「安全提醒」 |
+| `install/` | Firefox 安裝資料夾的 autoconfig（不會隨 `task deploy` 部署，用 `task autoconfig:install` 安裝）：`defaults/pref/autoconfig.js` 讓 Firefox 每次啟動時執行 `firefoxprofile.cfg`。這個腳本替歷史視窗和頁面資訊視窗加上 `windowsmica`、替顯示 about: 頁面的分頁加上 `transparent`，讓 CSS 裡等著這兩個屬性的樣式生效；也把「頁面資訊」加回網頁的右鍵選單（Firefox 從那裡拿掉了，Ctrl+I 和「工具」選單還能打開），並在分頁的右鍵選單加上「檢視原始碼」和「頁面資訊」（作用在按右鍵的那個分頁）；隱私視窗的新分頁則套用一般新分頁上傳的桌布（從新分頁的偏好設定讀出檔名，偏好設定一改就跟著換）。見下面「安全提醒」 |
 | `reference/` | `task prefs:dump` 產生的設定頁面對照表（不會部署）：`about-preferences.defaults.js` 是 about:preferences 每個項目對應的 pref 與預設值，`about-preferences.current.js` 是同樣的行換成目前的值（含個人設定，不 commit，已列在 `.gitignore`） |
 | `scripts/` | 部署、即時重新載入、量測工具，說明見 [`scripts/README.md`](scripts/README.md) |
 | `Taskfile.yaml` | 所有操作的入口 |
