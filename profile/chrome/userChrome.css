@@ -437,8 +437,14 @@ toolbar:not([customizing]) > #nav-bar-overflow-button {
   --tab-container-margin-inline-pinned-expanded: 2px !important;
   --tab-pinned-min-width: calc(var(--tab-min-height) + 2 * 2px) !important;
 
-  & .tabbrowser-tab {
+  /* Not while dragged: Firefox takes the tab out of the grid (position: absolute) and keeps its
+     size with an inline width, which this would override (shrinking the circle to a sliver).
+     Firefox: drag-and-drop.js (style.width before setting dragtarget), tabs.css ([dragtarget]) */
+  & .tabbrowser-tab:not([dragtarget]) {
     width: auto !important;
+  }
+
+  & .tabbrowser-tab {
     /* Background inset; Firefox also centers the favicon with it */
     --tab-margin-inline-pinned-expanded: 2px !important;
   }
