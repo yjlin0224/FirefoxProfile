@@ -33,7 +33,9 @@
  *     it was with Firefox's own panels.
  *   - Library window (with install/'s autoconfig, which gives it windowsmica): the window's Mica
  *     through its toolbar and folder list, the main area tinted like the sidebar panel. Page
- *     Info the same: its row of tabs over the Mica, its panels tinted.
+ *     Info the same: its row of tabs over the Mica, its panels tinted. Its tabs 32px pills
+ *     (16px line icon + label, centered) of equal widths, 8px apart and from the edges; its
+ *     buttons as moz-button.
  *   - Identical in every UI density, both sidebar modes, private windows, windowed or maximized.
  *
  * WHEN A FIREFOX UPDATE BREAKS SOMETHING
@@ -1054,7 +1056,7 @@ panel[type="arrow"] {
   }
 }
 
-/* Page Info Window: over Mica, Like the Library */
+/* Page Info Window: over Mica, Like the Library; Pill Tabs and Buttons */
 /* Page Info gets a backdrop from Windows with windowsmica on its root, as the Library;
    install/firefoxprofile.cfg adds it when windows have Mica, and everything here waits for it
    (without it, the transparent parts would show black or what's behind the window). With it:
@@ -1067,7 +1069,8 @@ panel[type="arrow"] {
    Firefox: pageInfo.css (`#topBar { border-bottom: 1px solid ThreeDShadow;
    background-color: Field }`, `#imagecontainerbox, #permList { background: Field }`),
    global.css (the root's -moz-dialog), tree/tree.css (`tree { background-color: Field }`,
-   `treecol { background-color: -moz-colheader }`, `::-moz-tree-row(multicol, odd) {
+   `treecol { background-color: -moz-colheader }`, `.tree-columnpicker-button { background-color:
+   -moz-ColHeader }`, `::-moz-tree-row(multicol, odd) {
    background-color: -moz-oddtreerow }`, the selected rows' SelectedItem and
    -moz-cellhighlight, the focus ring) */
 @-moz-document url("chrome://browser/content/pageinfo/pageInfo.xhtml") {
@@ -1085,7 +1088,7 @@ panel[type="arrow"] {
       background-color: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
     }
 
-    & :is(tree, treecol, #imagecontainerbox, #permList) {
+    & :is(tree, treecol, .tree-columnpicker-button, #imagecontainerbox, #permList) {
       background-color: transparent !important;
     }
 
@@ -1129,6 +1132,275 @@ panel[type="arrow"] {
 
     & treechildren::-moz-tree-row(current, focus) {
       outline: none !important;
+    }
+  }
+
+  /* The row of tabs: pills of a 16px icon and the label side by side, centered together,
+     32px high, sharing the row's width evenly 8px apart, 8px from the window's edges; hovered like an unselected pinned tab (its text color at 7%),
+     selected like a selected pinned tab (white at 20%, at 60% on a light scheme). The icons
+     Firefox's own line icons, in the text color, for its 2008 sprite.
+     FRAGILE: copies of the unselected pinned tab's color-mix() (tabbrowser/tabs.css) and of
+     --tab-background-color-selected, which only the browser window has.
+     Firefox: pageInfo.css (`#viewGroup .radio-icon { background-image:
+     url("chrome://browser/skin/pageInfo.png") }`, its positions, `#viewGroup { padding-inline-start:
+     10px }`, `#topBar { padding-inline-start: 10px }`, the radios' padding and colors),
+     content/pageinfo/pageInfo.css (`.radio-label-box { flex-direction: column }`) */
+  #viewGroup {
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+
+  #topBar {
+    padding-inline-start: 0 !important;
+  }
+
+  #viewGroup > radio {
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    border-radius: var(--border-radius-circle) !important;
+    color: inherit !important;
+
+    &:hover {
+      background-color: color-mix(in srgb, currentcolor 7%, transparent 93%) !important;
+    }
+
+    &[selected] {
+      background-color: light-dark(oklch(1 0 0 / 60%), oklch(1 0 0 / 20%)) !important;
+    }
+
+    /* The keyboard focus ring on the pill, not on the box inside it */
+    #viewGroup:focus-visible > &[focused='true'] {
+      outline: var(--focus-outline) !important;
+      outline-offset: var(--focus-outline-offset) !important;
+    }
+
+    & > .radio-label-box {
+      flex-direction: row !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      padding: 0 !important;
+      outline: none !important;
+    }
+
+    & .radio-icon {
+      width: 16px !important;
+      height: 16px !important;
+      background: var(--custom-page-info-icon) center / 16px no-repeat !important;
+      -moz-context-properties: fill;
+      fill: currentColor;
+      image-rendering: auto !important;
+    }
+
+    /* Its own width, so the icon and the label sit centered together: the label grows to fill
+       the pill (xul.css's `[flex="1"] { flex: 1 1 0% !important }`, which a user sheet can't
+       override), up to its max-width.
+       Firefox: radio.js (the label's flex="1") */
+    & .radio-label {
+      max-width: max-content !important;
+      margin: 0 !important;
+    }
+  }
+
+  #generalTab {
+    --custom-page-info-icon: url('chrome://global/skin/icons/info.svg');
+  }
+
+  #mediaTab {
+    --custom-page-info-icon: url('chrome://browser/skin/canvas.svg');
+  }
+
+  #permTab {
+    --custom-page-info-icon: url('chrome://browser/skin/permissions.svg');
+  }
+
+  #securityTab {
+    --custom-page-info-icon: url('chrome://global/skin/icons/security.svg');
+  }
+
+  /* The lists (the meta tags, the media, the permissions) and the media preview with 8px
+     corners, their contents clipped to them: the column headers, the rows, the scrollbar and
+     the image would cover them square. The trees scroll inside themselves, so clipping them
+     hides nothing; the permissions list and the preview already clip (overflow: auto).
+     Firefox: tree/tree.css (`tree { border: 1px solid ThreeDShadow }`), pageInfo.css (#permList,
+     #imagecontainerbox) */
+  :is(tree, #permList, #imagecontainerbox) {
+    border-radius: var(--border-radius-small) !important;
+  }
+
+  tree {
+    overflow: clip !important;
+  }
+
+  /* nova's button colors, as on the settings page: this window matches -moz-native-theme, so
+     Firefox gives it the system's accent color and plain outlines instead (its browser-theme
+     tokens skip native-themed windows). Set on the root, where --button-border is made from
+     --button-border-color.
+     FRAGILE: copies of nova's browser-theme button and accent tokens.
+     Firefox: design-system/tokens-platform.css (tokens-foundation-nova's AccentColor,
+     tokens-browser-theme-nova's `@media not ((forced-colors) or (-moz-native-theme))`) */
+  #main-window {
+    --color-accent-primary: light-dark(var(--color-violet-50), var(--color-violet-30)) !important;
+    --color-accent-primary-hover: light-dark(var(--color-violet-60), var(--color-violet-20)) !important;
+    --color-accent-primary-active: light-dark(var(--color-violet-70), var(--color-violet-10)) !important;
+    --button-background-color-primary: var(--color-accent-primary) !important;
+    --button-background-color-primary-hover: var(--color-accent-primary-hover) !important;
+    --button-background-color-primary-active: var(--color-accent-primary-active) !important;
+    --button-text-color-primary: light-dark(var(--color-white), var(--color-gray-70)) !important;
+    --button-background-color-hover: light-dark(
+      color-mix(in srgb, var(--color-accent-primary) 32%, transparent),
+      color-mix(in srgb, var(--color-accent-primary) 55%, transparent)
+    ) !important;
+    --button-background-color-active: light-dark(
+      color-mix(in srgb, var(--color-accent-primary) 50%, transparent),
+      color-mix(in srgb, var(--color-accent-primary) 75%, transparent)
+    ) !important;
+    --button-border-color: var(--color-accent-primary) !important;
+    --button-text-color: light-dark(var(--color-violet-90), var(--color-gray-0)) !important;
+  }
+
+  /* Each panel's main action filled, as moz-button type="primary": saving the media, viewing
+     the certificate. The rest stay outlined.
+     Firefox: moz-button.css (`:host([type~="primary"])`), pageInfo.xhtml (the buttons) */
+  :is(#imagesaveasbutton, #mediasaveasbutton, #security-view-cert) {
+    --button-background-color: var(--button-background-color-primary);
+    --button-background-color-hover: var(--button-background-color-primary-hover);
+    --button-background-color-active: var(--button-background-color-primary-active);
+    --button-text-color: var(--button-text-color-primary);
+    border-color: transparent !important;
+  }
+
+  /* Everything 8px from the panels' edges and 8px apart, as the tabs are from the window's
+     (they were 3px to 29px apart, 13px to 16px from the edges): the deck's padding is 8px less
+     what touches it, 4px above and below; the blocks get 4px above and below each, so two
+     meet 8px apart. The inline edges: the deck's padding is 8px less the inline margin every
+     label and description has, and the lists, the media preview and the buttons get that same
+     margin on the edge side for their own; buttons keep 5px on the other side (8px between
+     two). The tables' rows already have 1px above and 4px below their labels and fields: the
+     tables get the 3px that makes 4px above, nothing below. The media list's splitter, still
+     draggable, is the 4px under the list. Lines of text inside a block keep their spacing.
+     Firefox: pageInfo/pageInfo.css (`#mainDeck { padding: 10px }`, `th > label, td > input {
+     margin-block: 1px 4px }`, `.table-split-column { margin-block: 1px 4px }`), global-shared.css (`xul|label { margin-block:
+     var(--space-xxsmall); margin-inline: var(--space-xsmall) }`), pageInfo.css (`tree, #permList,
+     #imagecontainerbox { margin: 0.5em }`, `#imagetree { margin-block: 2px 0 }`, the tables'
+     bottom margins, `#hostText { margin-top: 1px }`), button.css (`button { margin: 1px 5px 2px }`),
+     pageInfo.xhtml (a 6px separator under the general table) */
+  #mainDeck {
+    padding: 4px calc(8px - var(--space-xsmall)) !important;
+  }
+
+  :is(tree, #permList, #imagecontainerbox) {
+    margin: 4px var(--space-xsmall) !important;
+  }
+
+  #mainDeck button:not(.tree-columnpicker-button) {
+    margin-block: 4px !important;
+    margin-inline: 5px var(--space-xsmall) !important;
+  }
+
+  #mainDeck table {
+    margin-block: 3px 0 !important;
+  }
+
+  :is(label.header, #permHostBox > *, #security-technical-shortform) {
+    margin-block: 4px !important;
+  }
+
+  /* The site's address is taller than its label: the label centered on it */
+  #permHostBox {
+    align-items: center !important;
+  }
+
+  /* A button in a table row sits in the row's cell like its text, the cell's 1px above and 4px
+     below being the row's spacing */
+  #mainDeck .table-split-column > button {
+    margin-block: 0 !important;
+  }
+
+  #generalPanel > separator {
+    display: none !important;
+  }
+
+  #imagetree {
+    margin-block-end: 0 !important;
+  }
+
+  #mediaSplitter {
+    min-height: 0 !important;
+    height: 4px !important;
+  }
+
+  /* The last paragraph's own 4px below, when the security panel is scrolled to its end */
+  #security-technical-certificate-transparency {
+    margin-block-end: 4px !important;
+  }
+
+  /* Help at the bottom of every panel: the others' lists grow to fill the window, pushing it
+     down, but the security panel has nothing that grows, so it sat right under the text in a
+     window made taller on another panel.
+     Firefox: pageInfo.xhtml (`<hbox pack="end"><button class="help-button"/></hbox>` last in
+     each panel) */
+  #mainDeck > vbox > hbox:has(> .help-button) {
+    margin-block-start: auto !important;
+  }
+
+  /* The security panel scrolls when the window is too short for it (it was cut off), Help
+     staying at the bottom: taken out to the window's bottom edge where the panel's own Help row
+     was (the deck's padding above), the panel ending above it (Help's height and its 4px above
+     and below). Hidden with the panel, whose visibility it inherits.
+     Firefox: xul.css (`deck > *:not(.deck-selected) { visibility: hidden }`) */
+  #securityPanel {
+    overflow-y: auto !important;
+    margin-block-end: calc(var(--button-min-height) + 2 * 4px) !important;
+
+    & > hbox:has(> .help-button) {
+      position: fixed !important;
+      inset: auto calc(8px - var(--space-xsmall)) 4px !important;
+    }
+  }
+
+  /* The permissions' names semibold as the other headings (Meta, Website Identity...), not bold
+     Firefox: pageInfo.css (`.permissionLabel { font-weight: var(--font-weight-bold) }`),
+     global-shared.css (`.header { font-weight: var(--font-weight-semibold) }`) */
+  .permissionLabel {
+    font-weight: var(--font-weight-semibold) !important;
+  }
+
+  /* Buttons as Firefox's own (moz-button's default: its variables, which this window has): no
+     native square box. Not the trees' column pickers, which are part of the column headers.
+     Firefox: global.css (the XUL button's native appearance), moz-button.css */
+  button:not(.tree-columnpicker-button) {
+    appearance: none !important;
+    min-height: var(--button-min-height) !important;
+    padding: var(--button-padding) !important;
+    border: var(--button-border) !important;
+    border-radius: var(--button-border-radius) !important;
+    background-color: var(--button-background-color) !important;
+    color: var(--button-text-color) !important;
+    font-weight: var(--button-font-weight) !important;
+
+    &:not([disabled]):hover {
+      background-color: var(--button-background-color-hover) !important;
+    }
+
+    &:not([disabled]):hover:active {
+      background-color: var(--button-background-color-active) !important;
+    }
+
+    /* Firefox grays a disabled button's text, which the color above overrides */
+    &[disabled] {
+      opacity: var(--button-opacity-disabled) !important;
+    }
+
+    &:focus-visible {
+      outline: var(--focus-outline) !important;
+      outline-offset: var(--focus-outline-offset) !important;
+    }
+
+    & > .button-box {
+      padding: 0 !important;
     }
   }
 }
