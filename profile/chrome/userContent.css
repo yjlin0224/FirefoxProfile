@@ -131,7 +131,7 @@
    takes two things: Firefox mustn't paint its default background behind the page, which the
    tab's <browser transparent> stops, and the page mustn't paint its own (here).
    Only with the attribute on, as either pref says: firefoxprofile.transparent_about_pages,
-   set by install/firefoxprofile.cfg (task autoconfig:install), which adds the attribute on
+   set by install/firefox.cfg (task autoconfig:install), which adds the attribute on
    about: pages, or Firefox's browser.tabs.allow_transparent_browser, every tab. Without it the
    page keeps its background: the default one Firefox paints instead is another color
    (#1C1B22, nova's pages #121114: measured).
@@ -847,7 +847,7 @@
      centered on the glyph edge, so 2px wide shows 1px outside), and a glow in the text color
      around that. Shadows are cast by the letters alone and painted under the outline, so the
      glow has to reach past it. The private window's new tab does the same
-     (install/firefoxprofile.cfg).
+     (install/firefox.cfg).
      Firefox: activity-stream.css, `.top-site-outer .title { color: var(--newtab-contextual-text-primary-color) }` */
   .top-site-outer .title,
   .widgets-title-heading h1 {

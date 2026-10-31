@@ -1,0 +1,6 @@
+{
+  // install/firefox.cfg is the autoconfig script: JavaScript under a name Firefox's docs use
+  "files.associations": {
+    "*.cfg": "javascript"
+  }
+}

@@ -23,3 +23,8 @@ vueIndentScriptAndStyle: false
 endOfLine: lf
 embeddedLanguageFormatting: auto
 singleAttributePerLine: true
+overrides:
+  # The autoconfig script is JavaScript; Firefox only needs the file name it's given
+  - files: '*.cfg'
+    options:
+      parser: babel

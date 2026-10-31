@@ -13,7 +13,7 @@ Firefox Developer Edition customization: `profile/chrome/userChrome.css` (with
   else in the profile folder is touched. Only `user.js` and `chrome/` may be in `profile/`
   (deploy refuses anything else; `.gitignore` ignores it): never copy profile data in.
 - `install/` mirrors the Firefox install folder: the autoconfig (`defaults/pref/autoconfig.js`,
-  `firefoxprofile.cfg`), installed by `task autoconfig:install` (a UAC prompt, so the user
+  `firefox.cfg`), installed by `task autoconfig:install` (a UAC prompt, so the user
   runs it; it installs the last commit only, so commit first), never by deploy. The .cfg runs with full privileges at every startup: keep it
   self-contained, never make it read or load a file from the profile or the repo (anything
   running as the user can write those).
@@ -21,8 +21,8 @@ Firefox Developer Edition customization: `profile/chrome/userChrome.css` (with
   `scripts/` and a task for them; keep one-off experiments out of the repo.
 - Keep one `task watch` running in the background while editing CSS; it re-detects the
   Browser Toolbox port on every save, so it survives the toolbox being reopened.
-- Before reporting work as done, run `task check` (Prettier on scripts/JSON/YAML, user.js
-  checks) and `task diff`. Don't reorder user.js: it's grouped by hand.
+- Before reporting work as done, run `task check` (Prettier on scripts, install/firefox.cfg,
+  JSON and YAML; user.js checks) and `task diff`. Don't reorder user.js: it's grouped by hand.
 - The Firefox version everything is tuned and checked against is stated in README.md (適用版本),
   the second line of `profile/user.js` and the TUNED FOR of both stylesheets. When it changes,
   follow README.md's upgrade steps and update all four together.

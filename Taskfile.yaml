@@ -79,8 +79,8 @@ tasks:
 
   fmt:
     desc:
-      Format the scripts, JSON and YAML with Prettier (.prettierrc.yaml; CSS, user.js and Markdown
-      excluded, see .prettierignore)
+      Format the scripts (install/firefox.cfg too), JSON and YAML with Prettier (.prettierrc.yaml;
+      CSS, user.js and Markdown excluded, see .prettierignore)
     cmds:
       - npx --yes prettier@{{.PRETTIER_VERSION}} --write .
 
